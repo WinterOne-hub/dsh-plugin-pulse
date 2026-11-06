@@ -21,7 +21,8 @@
       "stars": 11055,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Browse community plugins in Harness."
+      "descriptionEn": "Browse community plugins in Harness.",
+      "githubInstall": true
     },
     {
       "name": "@czj-git/dsh-plugin-hub",
@@ -40,7 +41,8 @@
       "stars": 1,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Search and filter plugins in Settings."
+      "descriptionEn": "Search and filter plugins in Settings.",
+      "githubInstall": true
     },
     {
       "name": "dsh-find-plugin",
@@ -59,7 +61,8 @@
       "stars": 226,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Find plugins by task from chat."
+      "descriptionEn": "Find plugins by task from chat.",
+      "githubInstall": true
     },
     {
       "name": "dsh-pet",
@@ -78,7 +81,8 @@
       "stars": 5706,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Add a desktop companion."
+      "descriptionEn": "Add a desktop companion.",
+      "githubInstall": false
     },
     {
       "name": "dsh-whale-widget",
@@ -97,7 +101,8 @@
       "stars": 6935,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Check your DeepSeek balance and pricing periods."
+      "descriptionEn": "Check your DeepSeek balance and pricing periods.",
+      "githubInstall": true
     },
     {
       "name": "dsh-cost-meter",
@@ -116,7 +121,8 @@
       "stars": 637,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Track session costs and usage."
+      "descriptionEn": "Track session costs and usage.",
+      "githubInstall": true
     },
     {
       "name": "@deepseek-harness-tui/dsh-tui",
@@ -135,7 +141,8 @@
       "stars": 7036,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Manage sessions and tools in a terminal."
+      "descriptionEn": "Manage sessions and tools in a terminal.",
+      "githubInstall": true
     },
     {
       "name": "dsh-dream-skin",
@@ -154,7 +161,8 @@
       "stars": null,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Customize the chat theme."
+      "descriptionEn": "Customize the chat theme.",
+      "githubInstall": false
     },
     {
       "name": "@michengai/dsh-archive-manager",
@@ -173,7 +181,8 @@
       "stars": 300,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Archive, favorite, and restore sessions."
+      "descriptionEn": "Archive, favorite, and restore sessions.",
+      "githubInstall": true
     },
     {
       "name": "dsh-chat-import",
@@ -192,7 +201,8 @@
       "stars": 284,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Import chats from other coding assistants."
+      "descriptionEn": "Import chats from other coding assistants.",
+      "githubInstall": false
     },
     {
       "name": "dsh-pocket",
@@ -211,7 +221,8 @@
       "stars": 2793,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Open your current session on a phone."
+      "descriptionEn": "Open your current session on a phone.",
+      "githubInstall": true
     },
     {
       "name": "dsh-mobile",
@@ -230,7 +241,8 @@
       "stars": 769,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Connect mobile devices to Harness."
+      "descriptionEn": "Connect mobile devices to Harness.",
+      "githubInstall": true
     },
     {
       "name": "@xmanrui/dsh-im",
@@ -249,7 +261,8 @@
       "stars": 3286,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Connect Harness to messaging apps."
+      "descriptionEn": "Connect Harness to messaging apps.",
+      "githubInstall": false
     },
     {
       "name": "@tencent-connect/dsh-qqbot",
@@ -268,7 +281,8 @@
       "stars": 544,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Use Harness in QQ chats and groups."
+      "descriptionEn": "Use Harness in QQ chats and groups.",
+      "githubInstall": true
     },
     {
       "name": "dsh-mnemon",
@@ -287,7 +301,8 @@
       "stars": 907,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Combine memory sources for project context."
+      "descriptionEn": "Combine memory sources for project context.",
+      "githubInstall": true
     },
     {
       "name": "dsh-fish-memory",
@@ -306,7 +321,8 @@
       "stars": 486,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Retain useful session details as fading memory."
+      "descriptionEn": "Retain useful session details as fading memory.",
+      "githubInstall": true
     },
     {
       "name": "meow-memory",
@@ -325,7 +341,8 @@
       "stars": 372,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Save and recall project memory."
+      "descriptionEn": "Save and recall project memory.",
+      "githubInstall": true
     },
     {
       "name": "dsh-free-search",
@@ -344,7 +361,8 @@
       "stars": 933,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Search the web across public providers."
+      "descriptionEn": "Search the web across public providers.",
+      "githubInstall": false
     },
     {
       "name": "dsh-genui",
@@ -363,7 +381,8 @@
       "stars": 47,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Show interactive charts and forms in chat."
+      "descriptionEn": "Show interactive charts and forms in chat.",
+      "githubInstall": false
     },
     {
       "name": "dsh-session-superagent",
@@ -382,7 +401,8 @@
       "stars": 13,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Trigger session tasks from repository activity."
+      "descriptionEn": "Trigger session tasks from repository activity.",
+      "githubInstall": false
     },
     {
       "name": "dsh-task-ledger",
@@ -401,7 +421,8 @@
       "stars": 1,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Track tasks and their progress."
+      "descriptionEn": "Track tasks and their progress.",
+      "githubInstall": false
     },
     {
       "name": "dsh-univer-office",
@@ -420,7 +441,8 @@
       "stars": 679,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Preview and work with office documents."
+      "descriptionEn": "Preview and work with office documents.",
+      "githubInstall": true
     },
     {
       "name": "dsh-image-gen",
@@ -439,7 +461,8 @@
       "stars": 1138,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Generate images through image services."
+      "descriptionEn": "Generate images through image services.",
+      "githubInstall": true
     },
     {
       "name": "@tt-a1i/archify-dsh",
@@ -458,7 +481,8 @@
       "stars": null,
       "sharedStars": 93999,
       "stars7": null,
-      "descriptionEn": "Generate architecture diagrams from repository content."
+      "descriptionEn": "Generate architecture diagrams from repository content.",
+      "githubInstall": false
     },
     {
       "name": "@wxg-prc-cpg/browser-skill-dsh-plugin",
@@ -477,7 +501,8 @@
       "stars": null,
       "sharedStars": 10095,
       "stars7": null,
-      "descriptionEn": "Let Harness use browser automation tools."
+      "descriptionEn": "Let Harness use browser automation tools.",
+      "githubInstall": false
     },
     {
       "name": "@michengai/dsh-skills-manager",
@@ -496,7 +521,8 @@
       "stars": 487,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Manage local skills in one panel."
+      "descriptionEn": "Manage local skills in one panel.",
+      "githubInstall": true
     },
     {
       "name": "dsh-config-manager",
@@ -515,7 +541,8 @@
       "stars": 301,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Back up and migrate Harness settings."
+      "descriptionEn": "Back up and migrate Harness settings.",
+      "githubInstall": true
     },
     {
       "name": "dsh-trust-check",
@@ -534,7 +561,8 @@
       "stars": 2,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Review a plugin’s declared capabilities before installation."
+      "descriptionEn": "Review a plugin’s declared capabilities before installation.",
+      "githubInstall": true
     },
     {
       "name": "dsh-codex-subscription",
@@ -553,7 +581,8 @@
       "stars": 387,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Connect an existing Codex subscription."
+      "descriptionEn": "Connect an existing Codex subscription.",
+      "githubInstall": true
     },
     {
       "name": "dsh-connect-workbuddy",
@@ -572,7 +601,8 @@
       "stars": 1206,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Add WorkBuddy as a model provider."
+      "descriptionEn": "Add WorkBuddy as a model provider.",
+      "githubInstall": false
     },
     {
       "name": "dsh-connect-trae",
@@ -591,7 +621,8 @@
       "stars": 195,
       "sharedStars": null,
       "stars7": null,
-      "descriptionEn": "Use Trae models in Harness."
+      "descriptionEn": "Use Trae models in Harness.",
+      "githubInstall": false
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { readFile, rename, writeFile } from 'node:fs/promises'
 import { makeCore } from '../src/core.js'
 
-const { day, sumWindow, validSnapshot } = makeCore()
+const { day, sumWindow, validSnapshot, githubRepoUrl, matchesGithubManifest } = makeCore()
 const location = name => new URL('../data/' + name, import.meta.url)
 const seeds = JSON.parse(await readFile(location('seeds.json'), 'utf8'))
 const read = async (file, fallback) => {
@@ -53,6 +53,16 @@ function github(repo) {
   return githubRequests.get(key)
 }
 
+async function githubInstallable(repo, name, version) {
+  if (!githubRepoUrl(repo)) return false
+  try {
+    const response = await fetch('https://raw.githubusercontent.com/' + repo + '/HEAD/package.json', {
+      signal: AbortSignal.timeout(10000)
+    })
+    return response.ok && matchesGithubManifest(await response.json(), name, version)
+  } catch { return false }
+}
+
 async function collect({ name, category, repo, description, descriptionEn, sharedStars = false }) {
   const encoded = encodeURIComponent(name)
   const old = previous.rows.find(row => row.name === name)
@@ -61,7 +71,7 @@ async function collect({ name, category, repo, description, descriptionEn, share
   catch (err) {
     failures.push('npm metadata ' + name + ': ' + err.message)
     if (!old) return null
-    return { ...old, title: name, description, descriptionEn, category, repo, tags: [],
+    return { ...old, title: name, description, descriptionEn, category, repo, tags: [], githubInstall: false,
       ...(previous.snapshotDay === snapshotDay ? {} : { stars: null, sharedStars: null, stars7: null }),
       ...(previous.npmDay === npmDay ? {} : { downloads30: null, downloads7: null, previousDownloads7: null, downloadsGrowth: null })
     }
@@ -75,10 +85,11 @@ async function collect({ name, category, repo, description, descriptionEn, share
     .map(([version]) => pkg.time?.[version]).filter(value => typeof value === 'string').sort()
   const firstRelease = bundleDates[0]?.slice(0, 10) ?? null
   const currentDownloads = previous.npmDay === npmDay && old?.downloads30 != null
-  const [download, repository] = await Promise.all([
+  const [download, repository, githubInstall] = await Promise.all([
     currentDownloads ? null : npmDownloads('https://api.npmjs.org/downloads/range/' + day(npmDay, -29) + ':' + npmDay + '/' + encoded)
       .catch(err => { failures.push('npm downloads ' + name + ': ' + err.message); return null }),
-    github(repo)
+    github(repo),
+    githubInstallable(repo, name, latest.version)
   ])
   const counts = Object.fromEntries((download?.downloads ?? []).map(entry => [entry.day, entry.downloads]))
   const downloads30 = currentDownloads ? old.downloads30 : download ? sumWindow(counts, npmDay, 30, firstRelease) : null
@@ -90,7 +101,7 @@ async function collect({ name, category, repo, description, descriptionEn, share
   const baseline = repoHistory[day(snapshotDay, -7)]
   return {
     name, title: name, description, descriptionEn, category, tags: [],
-    repo, version: latest.version, engines: typeof latest.engines?.dsh === 'string' ? latest.engines.dsh.slice(0, 250) : null, firstRelease,
+    repo, githubInstall, version: latest.version, engines: typeof latest.engines?.dsh === 'string' ? latest.engines.dsh.slice(0, 250) : null, firstRelease,
     downloads30, downloads7, previousDownloads7,
     downloadsGrowth: downloads7 === null || previousDownloads7 === null ? null : downloads7 - previousDownloads7,
     stars: sharedStars ? null : stars ?? (previous.snapshotDay === snapshotDay ? old?.stars ?? null : null),

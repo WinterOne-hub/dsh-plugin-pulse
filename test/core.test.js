@@ -5,6 +5,18 @@ import { makeCore } from '../src/core.js'
 
 const { day, rank, search, suggest, sumWindow } = makeCore()
 
+test('installation uses a matching GitHub root or falls back to the listed package version', () => {
+  const { githubRepoUrl, matchesGithubManifest, installTarget } = makeCore()
+  const row = { name: '@example/kit', version: '1.2.3', repo: 'example/plugins' }
+  const manifest = { name: row.name, version: row.version, dsh: { bundle: { patch: './cordis.patch.yml' } } }
+  assert.equal(matchesGithubManifest(manifest, row.name, row.version), true)
+  assert.equal(matchesGithubManifest({ ...manifest, private: true }, row.name, row.version), false)
+  assert.equal(matchesGithubManifest({ ...manifest, version: '1.2.4' }, row.name, row.version), false)
+  assert.equal(installTarget({ ...row, githubInstall: true }), 'https://github.com/example/plugins')
+  assert.equal(installTarget(row), '@example/kit@1.2.3')
+  assert.equal(githubRepoUrl('example/..'), null)
+})
+
 test('snapshot validation rejects malformed remote rows and accepts the bundled catalog', () => {
   const { validSnapshot } = makeCore()
   const snapshot = JSON.parse(readFileSync(new URL('../data/snapshot.json', import.meta.url), 'utf8'))

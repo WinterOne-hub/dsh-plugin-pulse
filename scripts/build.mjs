@@ -46,10 +46,7 @@ const loader = `window.__ModuleLoader__.load({
     }
     function Panel({ openPluginManager }) {
       const target = useRef(null);
-      useEffect(() => mountPulse(target.current, {
-        ...options, core: makeCore(), openPluginManager,
-        profile: 'dshDesktop' in globalThis ? 'desktop' : 'web'
-      }), [openPluginManager]);
+      useEffect(() => mountPulse(target.current, { ...options, core: makeCore(), openPluginManager }), [openPluginManager]);
       return createElement('section', { style: { height: '100%', overflowY: 'auto', padding: 'clamp(8px, 2vw, 24px)' } },
         createElement('div', { ref: target, style: { maxWidth: 1050, margin: '0 auto' } }));
     }

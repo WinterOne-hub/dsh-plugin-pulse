@@ -7,6 +7,13 @@ export function makeCore() {
   const boundedText = (value, limit) => typeof value === 'string' && value.length <= limit
   const validCount = value => value === null || (Number.isSafeInteger(value) && value >= 0)
   const validChange = value => value === null || Number.isSafeInteger(value)
+  function githubRepoUrl(repo) {
+    if (typeof repo !== 'string' || !/^[a-z0-9-]+\/(?!\.{1,2}$)[a-z0-9_.-]+$/i.test(repo)) return null
+    return 'https://github.com/' + repo
+  }
+  const matchesGithubManifest = (manifest, name, version) => Boolean(manifest?.dsh?.bundle &&
+    manifest.private !== true && manifest.name === name && manifest.version === version)
+  const installTarget = row => (row.githubInstall && githubRepoUrl(row.repo)) || row.name + '@' + row.version
   function validSnapshot(snapshot) {
     if (snapshot?.schema !== 1 || !validDate(snapshot.npmDay) || !validDate(snapshot.snapshotDay) ||
         snapshot.npmDay > snapshot.snapshotDay || !boundedText(snapshot.generatedAt, 24) ||
@@ -18,7 +25,8 @@ export function makeCore() {
           !boundedText(row.title, 214) || !boundedText(row.description, 250) || !boundedText(row.category, 80) ||
           !(row.descriptionEn === undefined || boundedText(row.descriptionEn, 250)) ||
           !Array.isArray(row.tags) || row.tags.length > 20 || !row.tags.every(tag => boundedText(tag, 128)) ||
-          !boundedText(row.repo, 140) || !/^[a-z0-9-]+\/[a-z0-9_.-]+$/i.test(row.repo) ||
+          !boundedText(row.repo, 140) || !githubRepoUrl(row.repo) ||
+          !(row.githubInstall === undefined || typeof row.githubInstall === 'boolean') ||
           !boundedText(row.version, 128) || !/^[a-z0-9.+-]+$/i.test(row.version) ||
           !(row.engines === null || boundedText(row.engines, 250)) || !(row.firstRelease === null || validDate(row.firstRelease)) ||
           ![row.downloads30, row.downloads7, row.previousDownloads7, row.stars, row.sharedStars].every(validCount) ||
@@ -67,5 +75,5 @@ export function makeCore() {
     }
     return sum
   }
-  return { day, search, suggest, rank, sumWindow, validSnapshot }
+  return { day, search, suggest, rank, sumWindow, validSnapshot, githubRepoUrl, matchesGithubManifest, installTarget }
 }

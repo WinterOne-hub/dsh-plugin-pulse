@@ -1,4 +1,4 @@
-export function mountPulse(root, { core, snapshot, topics, demandUrl = '', demandAuthenticated = false, snapshotUrl = '', issueUrl = '', css, profile = 'desktop', openPluginManager }) {
+export function mountPulse(root, { core, snapshot, topics, demandUrl = '', demandAuthenticated = false, snapshotUrl = '', issueUrl = '', css, openPluginManager }) {
   const doc = root.ownerDocument
   const host = root.shadowRoot ?? root.attachShadow({ mode: 'open' })
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c])
@@ -48,16 +48,15 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
   const status = app.querySelector('.status')
   const notify = message => { if (!disposed) status.textContent = message }
   const validName = /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/
-  const validRepo = /^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i
-  const installSpec = row => row.name + '@' + row.version
-  const installCommand = row => 'dsh plugin --profile ' + profile + ' add ' + installSpec(row)
   function installActions(row) {
-    if (!validName.test(row.name) || !/^[a-z0-9.+-]+$/i.test(row.version)) return ''
-    const copy = `<button type="button" class="quiet copy" data-copy="${escape(installCommand(row))}" aria-label="复制 ${escape(row.name)} 的安装命令" title="复制安装命令"><span aria-hidden="true">&gt;_</span> 复制命令</button>`
-    if (!openPluginManager) return copy
-    return `<button type="button" class="quiet" data-install="${escape(installSpec(row))}" aria-label="去安装 ${escape(row.name)}" title="复制包名和版本，打开插件管理器">去安装 ↗</button>${copy}`
+    const repoUrl = core.githubRepoUrl(row.repo)
+    const copy = repoUrl ? `<button type="button" class="quiet" data-copy="${escape(repoUrl)}" aria-label="复制 ${escape(row.name)} 的 GitHub 地址">复制 GitHub 地址</button>` : ''
+    if (!openPluginManager || !validName.test(row.name) || !/^[a-z0-9.+-]+$/i.test(row.version)) return copy
+    const target = core.installTarget(row)
+    const label = target === repoUrl ? '复制 GitHub 地址' : '复制包名和版本'
+    return `<button type="button" class="quiet" data-install="${escape(target)}" aria-label="去安装 ${escape(row.name)}" title="${label}，打开插件管理器">去安装 ↗</button>${copy}`
   }
-  const rowLink = row => validRepo.test(row.repo) ? 'https://github.com/' + row.repo : 'https://www.npmjs.com/package/' + row.name
+  const rowLink = row => core.githubRepoUrl(row.repo) ?? 'https://www.npmjs.com/package/' + row.name
   const gridHead = (label, field = '插件') => `<div class="grid-head" aria-hidden="true"><span>#</span><span>${field}</span><span>${label} ↓</span></div>`
   const rowMarkup = (row, rank, value, caption, note = '') => `
     <li class="row">
@@ -169,14 +168,13 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
     if (topic || action === 'report') openReport(topic)
     if (action === 'search') input.focus()
     if (action === 'close') { state.report = false; renderReport(); app.querySelector('[data-action=report]').focus() }
-    if (copy) {
-      try { await navigator.clipboard.writeText(copy); notify('已复制安装命令。') }
-      catch { notify('可手动复制：' + copy) }
-    }
-    if (install && openPluginManager) {
+    const value = install || copy
+    if (value) {
       try {
-        await navigator.clipboard.writeText(install)
-        if (!disposed) openPluginManager()
+        await navigator.clipboard.writeText(value)
+        if (disposed) return
+        if (install && openPluginManager) openPluginManager()
+        else notify('已复制 GitHub 地址。')
       } catch {
         if (disposed || !button.isConnected) return
         const row = button.closest('.row-main')
@@ -185,10 +183,10 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
           field = doc.createElement('input')
           field.className = 'install-spec'
           field.readOnly = true
-          field.setAttribute('aria-label', '安装包名和版本')
           row.append(field)
         }
-        field.value = install
+        field.setAttribute('aria-label', install ? '安装地址或包名' : 'GitHub 仓库地址')
+        field.value = value
         field.focus()
         field.select()
       }
