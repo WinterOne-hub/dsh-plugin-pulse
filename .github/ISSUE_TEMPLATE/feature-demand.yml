@@ -1,0 +1,15 @@
+name: 提议功能主题
+description: 提议搜索中缺少的功能，内容会公开
+title: '[功能主题] '
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: 希望插件解决什么问题？
+      description: 请勿附带对话、私有文件路径、凭证或个人信息。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 已试过哪些插件或替代做法？

@@ -1,0 +1,20 @@
+name: 提交插件收录
+description: 补充可以安装的 DeepSeek Harness 插件
+title: '[插件收录] '
+body:
+  - type: input
+    id: npm
+    attributes:
+      label: npm 包名
+    validations:
+      required: true
+  - type: input
+    id: repo
+    attributes:
+      label: GitHub 仓库地址
+    validations:
+      required: true
+  - type: input
+    id: category
+    attributes:
+      label: 功能分类

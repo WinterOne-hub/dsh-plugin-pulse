@@ -1,0 +1,32 @@
+name: Refresh public data
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: pulse-collect
+  cancel-in-progress: false
+jobs:
+  collect:
+    if: vars.PULSE_ENABLE_COLLECTION == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: '24'
+      - run: npm run collect
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/stars.json data/snapshot.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Refresh public plugin statistics'
+            git pull --rebase
+            git push
+          fi

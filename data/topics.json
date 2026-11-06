@@ -1,0 +1,12 @@
+[
+  {"id":"voice-input","label":"语音输入与实时转写","aliases":["语音","听写","转写","voice input","speech to text","dictation"]},
+  {"id":"mobile-remote","label":"手机远程操作与审批","aliases":["手机","远程控制","移动端","mobile","remote approval"]},
+  {"id":"session-sync","label":"跨设备会话同步","aliases":["会话同步","跨设备","session sync","cross-device"]},
+  {"id":"memory","label":"项目记忆与历史检索","aliases":["记忆","历史检索","memory","conversation search"]},
+  {"id":"context-meter","label":"上下文用量与费用看板","aliases":["上下文","费用","用量","token","context usage","cost"]},
+  {"id":"git-review","label":"Git 变更审查与提交辅助","aliases":["代码审查","git","提交","code review","diff"]},
+  {"id":"workflow","label":"定时任务与工作流","aliases":["定时","工作流","自动化","workflow","scheduler"]},
+  {"id":"notifications","label":"任务完成与审批通知","aliases":["通知","提醒","notification","alert"]},
+  {"id":"knowledge-base","label":"本地知识库与文档检索","aliases":["知识库","文档检索","rag","knowledge base"]},
+  {"id":"model-routing","label":"多模型切换与自动路由","aliases":["切换模型","多模型","路由","model routing","provider"]}
+]

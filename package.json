@@ -1,0 +1,32 @@
+{
+  "name": "dsh-plugin-pulse",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 插件榜单与需求反馈 / Plugin rankings and feature requests",
+  "repository": { "type": "git", "url": "git+https://github.com/WinterOne-hub/dsh-plugin-pulse.git" },
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=24", "dsh": ">=0.2.0-rc.2 <0.3.0 || >=0.2.2-rc.1 <0.2.2" },
+  "exports": {
+    ".": "./src/host.js",
+    "./client": "./dist/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": ["src/host.js", "dist/client.js", "cordis.patch.yml", "data/README.md"],
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "inject": ["@deepseek-ai/dsh-client-ui-renderer", "@deepseek-ai/dsh-client-ui-settings", "@deepseek-ai/dsh-client-ui-settings-general"]
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepack": "npm run build",
+    "collect": "node scripts/collect.mjs",
+    "preview": "node scripts/serve.mjs --local-voting",
+    "serve": "node scripts/serve.mjs",
+    "test": "node --test",
+    "check": "npm test && npm run build"
+  },
+  "keywords": ["dsh-plugin", "deepseek-harness", "leaderboard"]
+}
