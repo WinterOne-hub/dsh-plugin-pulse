@@ -1,4 +1,7 @@
-export function mountPulse(root, { core, snapshot, topics, demandUrl = '', demandAuthenticated = false, snapshotUrl = '', issueUrl = '', css, openPluginManager }) {
+export function mountPulse(root, {
+  core, snapshot, topics, demandUrl = '', demandAuthenticated = false, snapshotUrl = '', issueUrl = '',
+  css, openPluginManager, packageName, packageVersion, releaseRepo
+}) {
   const doc = root.ownerDocument
   const host = root.shadowRoot ?? root.attachShadow({ mode: 'open' })
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c])
@@ -14,6 +17,7 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
   const state = { tab: 'popular', metric: 'npm', query: '', category: '', report: false, counts: [], status: '', busy: false, loadError: false }
   let disposed = false
   const abort = new AbortController()
+  const copyFeedback = new Map()
   const style = doc.createElement('style')
   style.textContent = css
   const app = doc.createElement('main')
@@ -21,7 +25,7 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
   host.append(style, app)
   app.innerHTML = `
     <header class="console">
-      <div class="console-bar"><span class="brand"><span class="console-icon" aria-hidden="true">&gt;_</span> dsh / plugin-pulse</span><span class="catalog-size"></span></div>
+      <div class="console-bar"><span class="brand"><span class="console-icon" aria-hidden="true">&gt;_</span> dsh / plugin-pulse</span><div class="console-meta">${packageVersion ? `<span class="plugin-version" title="当前版本 / Installed version">v${escape(packageVersion)}</span>` : ''}<span class="catalog-size"></span></div></div>
       <div class="console-body">
         <h1>插件风向标</h1>
         <div class="search">
@@ -30,6 +34,7 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
         </div>
       </div>
     </header>
+    <div class="update-banner" role="status" hidden><span></span><a target="_blank" rel="noreferrer">查看更新 ↗</a></div>
     <nav aria-label="榜单">${Object.entries(tabs).map(([key, label]) => `<button type="button" data-tab="${key}">${label}<small aria-hidden="true">${tabNames[key]}</small></button>`).join('')}</nav>
     <div class="toolbar">
       <label>分类 <select id="pulse-category"><option value="">全部分类</option></select></label>
@@ -57,6 +62,39 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
     return `<button type="button" class="quiet" data-install="${escape(target)}" aria-label="去安装 ${escape(row.name)}" title="${label}，打开插件管理器">去安装 ↗</button>${copy}`
   }
   const rowLink = row => core.githubRepoUrl(row.repo) ?? 'https://www.npmjs.com/package/' + row.name
+  async function checkForUpdate() {
+    const repoUrl = core.githubRepoUrl(releaseRepo)
+    if (!repoUrl || !packageVersion || !packageName) return
+    const cacheKey = 'dsh-plugin-pulse.release.v1:' + releaseRepo + ':' + packageVersion
+    const now = Date.now()
+    const ttl = 12 * 60 * 60 * 1000
+    let cached
+    try { cached = JSON.parse(localStorage.getItem(cacheKey)) } catch { /* continue without storage */ }
+    let version = cached?.version
+    if (!(cached?.expires > now && cached.expires <= now + ttl)) {
+      let expires = now + 60 * 60 * 1000
+      version = null
+      try {
+        const response = await fetch('https://api.github.com/repos/' + releaseRepo + '/releases?per_page=20', {
+          credentials: 'omit', signal: AbortSignal.any([abort.signal, AbortSignal.timeout(6000)])
+        })
+        if (response.ok) {
+          const releases = await response.json()
+          if (Array.isArray(releases)) {
+            version = core.findUpdate(releases, packageVersion, packageName)
+            expires = now + ttl
+          }
+        }
+      } catch { /* the rankings remain usable offline */ }
+      if (disposed) return
+      try { localStorage.setItem(cacheKey, JSON.stringify({ version, expires })) } catch { /* continue without storage */ }
+    }
+    if (!core.isNewerVersion(version, packageVersion)) return
+    const banner = app.querySelector('.update-banner')
+    banner.querySelector('span').textContent = '新版本 v' + version + ' 可用'
+    banner.querySelector('a').href = repoUrl + '/releases/tag/v' + version
+    banner.hidden = false
+  }
   const gridHead = (label, field = '插件') => `<div class="grid-head" aria-hidden="true"><span>#</span><span>${field}</span><span>${label} ↓</span></div>`
   const rowMarkup = (row, rank, value, caption, note = '') => `
     <li class="row">
@@ -174,7 +212,17 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
         await navigator.clipboard.writeText(value)
         if (disposed) return
         if (install && openPluginManager) openPluginManager()
-        else notify('已复制 GitHub 地址。')
+        else {
+          notify('已复制 GitHub 地址。')
+          clearTimeout(copyFeedback.get(button))
+          button.textContent = '已复制'
+          button.dataset.copied = 'true'
+          copyFeedback.set(button, setTimeout(() => {
+            button.textContent = '复制 GitHub 地址'
+            delete button.dataset.copied
+            copyFeedback.delete(button)
+          }, 2000))
+        }
       } catch {
         if (disposed || !button.isConnected) return
         const row = button.closest('.row-main')
@@ -238,6 +286,7 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
   }
   hydrateCategories()
   render()
+  void checkForUpdate()
   if (snapshotUrl) void (async () => {
     try {
       const response = await fetch(snapshotUrl, { credentials: 'omit', signal: abort.signal })
@@ -261,5 +310,11 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
       try { localStorage.setItem(snapshotKey, JSON.stringify(incoming)) } catch { /* memory cache remains available */ }
     } catch { /* last valid snapshot remains available */ }
   })()
-  return () => { disposed = true; abort.abort(); host.replaceChildren() }
+  return () => {
+    disposed = true
+    abort.abort()
+    for (const timer of copyFeedback.values()) clearTimeout(timer)
+    copyFeedback.clear()
+    host.replaceChildren()
+  }
 }

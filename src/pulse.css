@@ -36,6 +36,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { 
 .brand { color:#cfdaeb; display:flex; align-items:center; gap:7px; }
 .console-icon { color:#e9bb68; font-weight:700; }
 .catalog-size { white-space:nowrap; font-variant-numeric:tabular-nums; }
+.console-meta { display:flex; align-items:center; gap:8px; }
+.plugin-version { color:#e6edf7; border:1px solid #4a5b71; border-radius:4px; padding:0 4px; white-space:nowrap; }
+.update-banner { display:flex; justify-content:space-between; flex-wrap:wrap; gap:3px 12px; padding:6px clamp(10px,3.2cqi,18px); background:var(--active); border-bottom:1px solid var(--line); font-size:12px; }
+.update-banner a { white-space:nowrap; }
 .console-body { padding-block:13px 15px; }
 .search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-top:12px; }
 .command { display:flex; align-items:center; min-width:0; padding:0 7px; gap:7px; border:1px solid var(--line); border-radius:5px; background:var(--surface); }
@@ -94,6 +98,7 @@ ol > .row:nth-child(-n+3) > .position { color:var(--rank); font-weight:700; }
 .pulse:has([data-tab=trending][aria-pressed=true]) .metric strong { color:var(--gain); }
 a { color:var(--accent); text-underline-offset:2px; }
 button.quiet { color:var(--accent); background:transparent; padding:0 3px; border-color:transparent; font-size:11px; }
+button.quiet[data-copied=true] { color:var(--gain); }
 .install-spec { width:100%; margin-top:5px; font:11px/1.4 var(--mono); }
 .empty,.report-box { background:var(--wash); border-block:1px solid var(--line); padding-block:10px; }
 .empty p,.report-box p { margin:4px 0; }

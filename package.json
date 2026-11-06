@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-pulse",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "DeepSeek Harness 插件榜单与需求反馈 / Plugin rankings and feature requests",
   "repository": { "type": "git", "url": "git+https://github.com/WinterOne-hub/dsh-plugin-pulse.git" },
   "type": "module",

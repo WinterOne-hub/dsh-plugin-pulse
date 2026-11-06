@@ -14,6 +14,30 @@ export function makeCore() {
   const matchesGithubManifest = (manifest, name, version) => Boolean(manifest?.dsh?.bundle &&
     manifest.private !== true && manifest.name === name && manifest.version === version)
   const installTarget = row => (row.githubInstall && githubRepoUrl(row.repo)) || row.name + '@' + row.version
+  function versionParts(version) {
+    if (typeof version !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) return null
+    const parts = version.split('.').map(Number)
+    return parts.every(Number.isSafeInteger) ? parts : null
+  }
+  function isNewerVersion(candidate, current) {
+    const left = versionParts(candidate)
+    const right = versionParts(current)
+    if (!left || !right) return false
+    for (let i = 0; i < left.length; i++) {
+      if (left[i] !== right[i]) return left[i] > right[i]
+    }
+    return false
+  }
+  function findUpdate(releases, current, packageName) {
+    let newest = current
+    for (const release of releases) {
+      if (release?.draft !== false || typeof release.tag_name !== 'string' || !release.tag_name.startsWith('v')) continue
+      const version = release.tag_name.slice(1)
+      if (!isNewerVersion(version, newest) || !Array.isArray(release.assets)) continue
+      if (release.assets.some(asset => asset?.name === packageName + '-' + version + '.tgz' && asset.state === 'uploaded')) newest = version
+    }
+    return newest === current ? null : newest
+  }
   function validSnapshot(snapshot) {
     if (snapshot?.schema !== 1 || !validDate(snapshot.npmDay) || !validDate(snapshot.snapshotDay) ||
         snapshot.npmDay > snapshot.snapshotDay || !boundedText(snapshot.generatedAt, 24) ||
@@ -75,5 +99,5 @@ export function makeCore() {
     }
     return sum
   }
-  return { day, search, suggest, rank, sumWindow, validSnapshot, githubRepoUrl, matchesGithubManifest, installTarget }
+  return { day, search, suggest, rank, sumWindow, validSnapshot, githubRepoUrl, matchesGithubManifest, installTarget, isNewerVersion, findUpdate }
 }

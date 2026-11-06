@@ -5,6 +5,21 @@ import { makeCore } from '../src/core.js'
 
 const { day, rank, search, suggest, sumWindow } = makeCore()
 
+test('update notices select the highest published version with an uploaded install package', () => {
+  const { findUpdate, isNewerVersion } = makeCore()
+  const name = 'dsh-plugin-pulse'
+  const release = (version, options = {}) => ({
+    tag_name: 'v' + version, draft: false, prerelease: true,
+    assets: [{ name: name + '-' + version + '.tgz', state: 'uploaded' }], ...options
+  })
+  assert.equal(findUpdate([
+    release('0.1.9'), release('0.1.10'), release('0.2.0', { assets: [] }),
+    release('0.3.0', { draft: true }), release('1.0.0', { assets: [{ name: name + '-1.0.0.tgz', state: 'new' }] })
+  ], '0.1.2', name), '0.1.10')
+  assert.equal(findUpdate([release('0.1.2'), release('0.1.1')], '0.1.2', name), null)
+  assert.equal(isNewerVersion('0.2.0/../issues', '0.1.2'), false)
+})
+
 test('installation uses a matching GitHub root or falls back to the listed package version', () => {
   const { githubRepoUrl, matchesGithubManifest, installTarget } = makeCore()
   const row = { name: '@example/kit', version: '1.2.3', repo: 'example/plugins' }

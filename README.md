@@ -41,6 +41,8 @@ dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.1.tgz"
 
 卸载使用 `dsh plugin --profile desktop remove dsh-plugin-pulse`（Web 将 profile 换成 `web`）。
 
+从 `v0.1.2` 起，榜单顶部显示当前版本。有更高版本且已上传安装包时，会显示「查看更新」，打开对应的 GitHub Release。
+
 安装包带公开榜单快照。需求榜使用部署方选择的统计服务；默认包未预设任何外部地址。
 
 ## 排名口径
@@ -97,6 +99,8 @@ dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.1.tgz"
 Restart Harness and open **插件风向标** in the left sidebar. **复制 GitHub 地址** copies the repository URL. **去安装** copies a target and opens Harness’s **Plugins** page. It uses the GitHub URL when the root package matches the listed version and `package@version` for other entries. Choose **Add plugin**, paste, and follow the prompts. Use `--profile web` for Harness Web. For `0.1.0`, look under **Settings → 插件风向标** and use the downloaded filename in the install command.
 
 To uninstall, run `dsh plugin --profile desktop remove dsh-plugin-pulse` with the appropriate profile. The bundled snapshot works offline. Public voting requires a configured service.
+
+From `v0.1.2`, the header shows your installed version. If a newer GitHub Release has an install package, an update link opens that release.
 
 ### Ranking rules
 

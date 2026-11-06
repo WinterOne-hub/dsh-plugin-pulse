@@ -15,17 +15,20 @@ function url(key) {
   if (key === 'PULSE_DEMAND_URL' && parsed.search) throw new Error(key + ' must not have a query string')
   return parsed.href
 }
-const [raw, topics, css] = await Promise.all([
+const [raw, topics, css, manifest] = await Promise.all([
   read('data/snapshot.json').catch(err => {
     if (err.code !== 'ENOENT') throw err
     return JSON.stringify({ schema: 1, generatedAt: null, npmDay: null, snapshotDay: null, rows: [] })
   }),
-  read('data/topics.json'), read('src/pulse.css')
+  read('data/topics.json'), read('src/pulse.css'), read('package.json').then(JSON.parse)
 ])
 const snapshot = JSON.parse(raw)
 if (snapshot.generatedAt !== null && !makeCore().validSnapshot(snapshot)) throw new Error('Invalid bundled snapshot')
+const repository = new URL(manifest.repository.url.replace(/^git\+/, ''))
 const options = JSON.stringify({
   snapshot, topics: JSON.parse(topics), css,
+  packageName: manifest.name, packageVersion: manifest.version,
+  releaseRepo: repository.hostname === 'github.com' ? repository.pathname.slice(1).replace(/\.git$/, '') : '',
   demandUrl: url('PULSE_DEMAND_URL'), demandAuthenticated: process.env.PULSE_DEMAND_AUTHENTICATED === '1',
   snapshotUrl: url('PULSE_SNAPSHOT_URL'), issueUrl: url('PULSE_ISSUE_URL')
 })
