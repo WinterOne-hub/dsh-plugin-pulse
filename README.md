@@ -1,20 +1,16 @@
 # 插件风向标 · Plugin Pulse
 
+[中文](#本地预览) · [English](#english) · [下载安装包 / Download](https://github.com/WinterOne-hub/dsh-plugin-pulse/releases)
+
 DeepSeek Harness 社区插件榜单与需求反馈。无需 DeepSeek API Key。
 
-Community plugin rankings and feature requests for DeepSeek Harness. No DeepSeek API key required.
+Plugin directory, leaderboards, and feature requests for DeepSeek Harness (DSH). No DeepSeek API key required.
 
 | 功能 / Feature | 中文 | English |
 | --- | --- | --- |
 | 最受欢迎 / Popular | 按近 30 天 npm 下载量或 GitHub Stars 排行。 | Rank by 30-day npm downloads or GitHub stars. |
 | 新插件飙升 / Trending | 比较新插件最近两周的增长。 | See which new plugins gained the most week over week. |
 | 最期待功能 / Requests | 搜不到合适插件时可提交需求，查看热门提议。 | Request a missing feature and see what others want. |
-
-## Quick start / 快速开始
-
-Use Node.js 24. Run `npm run build && npm run preview`, then open the [local preview](http://127.0.0.1:4173).
-
-Install a release `.tgz` with `dsh plugin --profile desktop add /path/to/file.tgz`, restart Harness and open **Settings → 插件风向标**. Use `--profile web` for Harness Web. A packaged snapshot supports offline browsing. Public voting requires a configured identity gateway.
 
 ## 本地预览
 
@@ -29,7 +25,7 @@ npm run preview
 
 ## 安装到 Harness
 
-从仓库根目录生成安装包：
+从 [GitHub Releases](https://github.com/WinterOne-hub/dsh-plugin-pulse/releases) 下载 `.tgz`，或在仓库根目录运行：
 
 ```sh
 npm pack
@@ -72,7 +68,7 @@ npm run check
 PULSE_DEMAND_URL=https://pulse.example.org/api \
 PULSE_DEMAND_AUTHENTICATED=1 \
 PULSE_SNAPSHOT_URL=https://pulse.example.org/snapshot.json \
-PULSE_ISSUE_URL=https://github.com/OWNER/REPO/issues/new?template=feature-demand.yml \
+PULSE_ISSUE_URL='https://github.com/OWNER/REPO/issues/new?template=feature-demand.yml' \
 npm pack
 ```
 
@@ -81,3 +77,39 @@ npm pack
 普通搜索在浏览器内完成。本地预览按浏览器凭证去重，公开服务按网关验证的账号去重。服务只保存主题、散列后的标识和时间戳，定期清理超过 35 天的记录。统计窗口为 30 天，主题至少有 5 条有效提交才上榜。
 
 数据接口：[DSH 插件开发文档](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/index.md) · [npm 下载量](https://github.com/npm/registry/blob/main/docs/download-counts.md) · [GitHub Stars](https://docs.github.com/en/rest/activity/starring)。本项目以 MIT 许可证开源，与 DeepSeek 官方无隶属关系。
+
+## English
+
+### Local preview
+
+Use Node.js 24. Run `npm run build && npm run preview`, then open the [local preview](http://127.0.0.1:4173). It uses a bundled snapshot and stores local votes in `.pulse/demand.sqlite`.
+
+### Install in Harness
+
+Download the `.tgz` from [GitHub Releases](https://github.com/WinterOne-hub/dsh-plugin-pulse/releases), or run `npm pack` in the repository. Quit Harness Desktop, open a terminal in the directory containing the package, and run the following command.
+
+```sh
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.0.tgz"
+```
+
+Restart Harness and open **Settings → 插件风向标**. Use `--profile web` for Harness Web. To uninstall, run `dsh plugin --profile desktop remove dsh-plugin-pulse` with the appropriate profile. Tested on macOS Harness Desktop `0.2.2-rc.1` and Harness Web `0.2.0-rc.2`. The bundled snapshot works offline. Public voting requires a configured service.
+
+### Ranking rules
+
+- **Popular.** Rank by npm downloads over 30 complete days or GitHub stars. Shared repository stars appear separately. Download counts can include automated activity.
+- **Trending.** Include DSH bundles first published on npm within 60 days. Compare the latest seven days of downloads with the preceding seven and require a gain of at least 10. The stars view requires two snapshots seven UTC days apart and a gain of at least one star. Missing days after publication stay unknown. The initial catalog covers npm packages.
+- **Requests.** Rank by submissions over the past 30 days. Where enabled, users can propose new topics through a GitHub issue form.
+
+The collector checks the latest package for a `dsh.bundle` declaration and reads compatibility from package metadata. It records GitHub stars by UTC date and allows two days for npm download figures to settle. Plugin summaries are written for this project. [Data sources](data/README.md)
+
+### Refresh data and enable voting
+
+- **Data.** Run `npm run collect` to refresh snapshots. An optional `GITHUB_TOKEN` raises the GitHub API limit. Run `npm run check` to verify the build. To enable scheduled collection, confirm that Actions can update the default branch, set `PULSE_ENABLE_COLLECTION=true` as a repository variable, and run the workflow manually once. Check both `data/snapshot.json` and `data/stars.json`.
+- **Snapshots.** Host `data/snapshot.json` as a public static file and set `PULSE_SNAPSHOT_URL` at build time. If a refresh fails or the data is invalid, the plugin uses the most recent valid snapshot or the bundled copy.
+- **Public voting.** Run `npm run serve` behind an HTTPS identity gateway. The server binds to `127.0.0.1:4173` by default and voting starts disabled. Configure distinct random values of at least 32 characters for `PULSE_GATEWAY_SECRET` and `PULSE_VOTER_KEY`. Allow only the gateway to reach the backend. The gateway must strip incoming `X-Pulse-Gateway-Secret` and `X-Pulse-User` headers, then set them to the shared secret and a stable authenticated account ID. Rate-limit login and API requests.
+- **Storage and browser access.** Set `PULSE_DB` to a persistent file separate from the local preview database. Add allowed browser origins, including the hosted UI, to `PULSE_ALLOWED_ORIGINS`. For cross-site access, forward `OPTIONS /api/votes` and allow the browser to send the gateway session cookie. Keep `PULSE_VOTER_KEY` stable for account deduplication.
+- **Build options.** Set `PULSE_DEMAND_URL` to the service’s `/api` URL and `PULSE_DEMAND_AUTHENTICATED=1` for public voting, then run `npm pack`. Set `PULSE_ISSUE_URL` to link a public topic form. For local Web testing, use `http://127.0.0.1:4173/api` with the Harness Web origin in `PULSE_ALLOWED_ORIGINS`. External requests from the desktop app still need testing against the deployed gateway.
+
+Search runs locally. The preview deduplicates votes by browser ID and public voting uses authenticated accounts. The service keeps the topic, a hashed identifier, and a timestamp, and regularly deletes records older than 35 days. A topic needs five valid submissions within 30 days to appear.
+
+MIT-licensed community project for DeepSeek Harness. [Harness plugin guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/index.md) · [npm download counts](https://github.com/npm/registry/blob/main/docs/download-counts.md) · [GitHub stars](https://docs.github.com/en/rest/activity/starring)

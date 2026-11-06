@@ -28,5 +28,8 @@
     "test": "node --test",
     "check": "npm test && npm run build"
   },
-  "keywords": ["dsh-plugin", "deepseek-harness", "leaderboard"]
+  "keywords": [
+    "dsh-plugin", "deepseek-harness", "deepseek", "plugin-discovery",
+    "plugin-directory", "plugin-leaderboard", "leaderboard", "feature-requests"
+  ]
 }
