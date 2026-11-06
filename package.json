@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-pulse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek Harness 插件榜单与需求反馈 / Plugin rankings and feature requests",
   "repository": { "type": "git", "url": "git+https://github.com/WinterOne-hub/dsh-plugin-pulse.git" },
   "type": "module",
@@ -16,7 +16,7 @@
     "bundle": { "patch": "./cordis.patch.yml" },
     "client": {
       "platform": "web",
-      "inject": ["@deepseek-ai/dsh-client-ui-renderer", "@deepseek-ai/dsh-client-ui-settings", "@deepseek-ai/dsh-client-ui-settings-general"]
+      "inject": ["@deepseek-ai/dsh-client-ui-renderer", "@deepseek-ai/dsh-client-ui-layout", "@deepseek-ai/dsh-client-ui-sidebar"]
     }
   },
   "scripts": {

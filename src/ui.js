@@ -1,4 +1,4 @@
-export function mountPulse(root, { core, snapshot, topics, demandUrl = '', demandAuthenticated = false, snapshotUrl = '', issueUrl = '', css, profile = 'desktop' }) {
+export function mountPulse(root, { core, snapshot, topics, demandUrl = '', demandAuthenticated = false, snapshotUrl = '', issueUrl = '', css, profile = 'desktop', openPluginManager }) {
   const doc = root.ownerDocument
   const host = root.shadowRoot ?? root.attachShadow({ mode: 'open' })
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c])
@@ -49,7 +49,14 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
   const notify = message => { if (!disposed) status.textContent = message }
   const validName = /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/
   const validRepo = /^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i
-  const install = row => 'dsh plugin --profile ' + profile + ' add ' + row.name + '@' + row.version
+  const installSpec = row => row.name + '@' + row.version
+  const installCommand = row => 'dsh plugin --profile ' + profile + ' add ' + installSpec(row)
+  function installActions(row) {
+    if (!validName.test(row.name) || !/^[a-z0-9.+-]+$/i.test(row.version)) return ''
+    const copy = `<button type="button" class="quiet copy" data-copy="${escape(installCommand(row))}" aria-label="复制 ${escape(row.name)} 的安装命令" title="复制安装命令"><span aria-hidden="true">&gt;_</span> 复制命令</button>`
+    if (!openPluginManager) return copy
+    return `<button type="button" class="quiet" data-install="${escape(installSpec(row))}" aria-label="去安装 ${escape(row.name)}" title="复制包名和版本，打开插件管理器">去安装 ↗</button>${copy}`
+  }
   const rowLink = row => validRepo.test(row.repo) ? 'https://github.com/' + row.repo : 'https://www.npmjs.com/package/' + row.name
   const gridHead = (label, field = '插件') => `<div class="grid-head" aria-hidden="true"><span>#</span><span>${field}</span><span>${label} ↓</span></div>`
   const rowMarkup = (row, rank, value, caption, note = '') => `
@@ -57,7 +64,7 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
       <span class="position">${rank === null ? '·' : String(rank).padStart(2, '0')}</span>
       <div class="row-main"><div class="row-title"><a href="${escape(rowLink(row))}" target="_blank" rel="noreferrer">${escape(row.title || row.name)}</a><span class="tag">${escape(row.category)}</span></div>
         <p lang="zh-CN">${escape(row.description)}</p>${row.descriptionEn ? `<p lang="en">${escape(row.descriptionEn)}</p>` : ''}<div class="row-meta"><span class="meta">v${escape(row.version)} ${row.engines ? ' · DSH ' + escape(row.engines) : ''} ${note ? ' · ' + escape(note) : ''}</span>
-        ${validName.test(row.name) && /^[a-z0-9.+-]+$/i.test(row.version) ? `<button type="button" class="quiet copy" data-copy="${escape(install(row))}" aria-label="复制 ${escape(row.name)} 的安装命令" title="复制安装命令"><span aria-hidden="true">&gt;_</span> 复制安装</button>` : ''}</div>
+        ${installActions(row)}</div>
       </div>
       <div class="metric"><strong>${escape(value)}</strong><small>${escape(caption)}</small></div>
     </li>`
@@ -157,7 +164,7 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
   app.addEventListener('click', async event => {
     const button = event.target.closest('button')
     if (!button) return
-    const { tab, topic, action, copy } = button.dataset
+    const { tab, topic, action, copy, install } = button.dataset
     if (tab) { state.tab = tab; render(); if (tab === 'demand') void loadDemand() }
     if (topic || action === 'report') openReport(topic)
     if (action === 'search') input.focus()
@@ -165,6 +172,26 @@ export function mountPulse(root, { core, snapshot, topics, demandUrl = '', deman
     if (copy) {
       try { await navigator.clipboard.writeText(copy); notify('已复制安装命令。') }
       catch { notify('可手动复制：' + copy) }
+    }
+    if (install && openPluginManager) {
+      try {
+        await navigator.clipboard.writeText(install)
+        if (!disposed) openPluginManager()
+      } catch {
+        if (disposed || !button.isConnected) return
+        const row = button.closest('.row-main')
+        let field = row.querySelector('.install-spec')
+        if (!field) {
+          field = doc.createElement('input')
+          field.className = 'install-spec'
+          field.readOnly = true
+          field.setAttribute('aria-label', '安装包名和版本')
+          row.append(field)
+        }
+        field.value = install
+        field.focus()
+        field.select()
+      }
     }
   })
   app.addEventListener('keydown', event => {

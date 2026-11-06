@@ -37,20 +37,31 @@ const loader = `window.__ModuleLoader__.load({
   factory: (require) => {
     const { createElement, useEffect, useRef } = require('react');
     ${shared}
-    function Panel() {
+    const panelId = 'dsh-plugin-pulse';
+    function PulseIcon({ size = 18 }) {
+      return createElement('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+        strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true
+      }, createElement('path', { d: 'M4 19h16M6 15v-3m6 3V8m6 7V4' }));
+    }
+    function Panel({ openPluginManager }) {
       const target = useRef(null);
-      useEffect(() => mountPulse(target.current, { ...options, core: makeCore(), profile: 'dshDesktop' in globalThis ? 'desktop' : 'web' }), []);
-      return createElement('div', { ref: target });
+      useEffect(() => mountPulse(target.current, {
+        ...options, core: makeCore(), openPluginManager,
+        profile: 'dshDesktop' in globalThis ? 'desktop' : 'web'
+      }), [openPluginManager]);
+      return createElement('section', { style: { height: '100%', overflowY: 'auto', padding: 'clamp(8px, 2vw, 24px)' } },
+        createElement('div', { ref: target, style: { maxWidth: 1050, margin: '0 auto' } }));
     }
     return {
-      inject: ['slots'],
+      inject: ['slots', 'layout'],
       apply(ctx) {
-        ctx.slots.inject('settings.section', () => ctx.slots.register({
-          name: 'settings.section',
-          id: 'dsh-plugin-pulse',
-          order: 65,
-          label: () => '插件风向标'
-        }, Panel));
+        const openPluginManager = () => ctx.layout.selectPanel('plugins');
+        const MainPanel = () => createElement(Panel, { openPluginManager });
+        ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: panelId }, MainPanel));
+        ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
+          name: 'sidebar.panellist', id: panelId, order: 5, label: '插件风向标'
+        }, PulseIcon));
       }
     };
   }

@@ -95,6 +95,7 @@ ol > .row:nth-child(-n+3) > .position { color:var(--rank); font-weight:700; }
 a { color:var(--accent); text-underline-offset:2px; }
 button.quiet { color:var(--accent); background:transparent; padding:0 3px; border-color:transparent; font-size:11px; }
 .copy span { font-family:var(--mono); }
+.install-spec { width:100%; margin-top:5px; font:11px/1.4 var(--mono); }
 .empty,.report-box { background:var(--wash); border-block:1px solid var(--line); padding-block:10px; }
 .empty p,.report-box p { margin:4px 0; }
 .empty button { margin-top:5px; }

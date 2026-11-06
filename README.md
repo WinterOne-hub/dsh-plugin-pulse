@@ -34,10 +34,12 @@ npm pack
 在启动过一次的 Harness Desktop 中，先完全退出应用，再在同一目录运行：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.0.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.1.tgz"
 ```
 
-重新打开应用，在「设置 → 插件风向标」查看。Web 使用 `dsh plugin --profile web add "$PWD/dsh-plugin-pulse-0.1.0.tgz"`，重启 `dsh --profile web` 后进入同一个设置页。已验证 macOS Harness Desktop `0.2.2-rc.1` 和 Harness Web `0.2.0-rc.2` 的安装、界面和卸载。卸载时使用 `dsh plugin --profile desktop remove dsh-plugin-pulse`（Web 将 profile 换成 `web`）。
+重启后，在左侧栏打开「插件风向标」。榜单中的「去安装」会复制包名和版本并打开 Harness 的「插件」页。点「添加插件」，粘贴后按 Harness 提示确认。Web 版安装时把 `desktop` 换成 `web`。使用旧版 `0.1.0` 时，入口位于「设置 → 插件风向标」，安装命令中的文件名也应与下载版本一致。
+
+卸载使用 `dsh plugin --profile desktop remove dsh-plugin-pulse`（Web 将 profile 换成 `web`）。
 
 安装包带公开榜单快照。需求榜使用部署方选择的统计服务；默认包未预设任何外部地址。
 
@@ -89,10 +91,12 @@ Use Node.js 24. Run `npm run build && npm run preview`, then open the [local pre
 Download the `.tgz` from [GitHub Releases](https://github.com/WinterOne-hub/dsh-plugin-pulse/releases), or run `npm pack` in the repository. Quit Harness Desktop, open a terminal in the directory containing the package, and run the following command.
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.0.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.1.tgz"
 ```
 
-Restart Harness and open **Settings → 插件风向标**. Use `--profile web` for Harness Web. To uninstall, run `dsh plugin --profile desktop remove dsh-plugin-pulse` with the appropriate profile. Tested on macOS Harness Desktop `0.2.2-rc.1` and Harness Web `0.2.0-rc.2`. The bundled snapshot works offline. Public voting requires a configured service.
+Restart Harness and open **插件风向标** in the left sidebar. Select **去安装** to copy a package name and version and open Harness’s **Plugins** page. Choose **Add plugin**, paste the package, and follow the prompts. Use `--profile web` for Harness Web. For `0.1.0`, look under **Settings → 插件风向标** and use the downloaded filename in the install command.
+
+To uninstall, run `dsh plugin --profile desktop remove dsh-plugin-pulse` with the appropriate profile. The bundled snapshot works offline. Public voting requires a configured service.
 
 ### Ranking rules
 
