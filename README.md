@@ -34,14 +34,14 @@ npm pack
 在启动过一次的 Harness Desktop 中，先完全退出应用，再在同一目录运行：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.3.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.4.tgz"
 ```
 
 重启后，在左侧栏打开「插件风向标」。「复制 GitHub 地址」会复制仓库链接。「去安装」会复制可粘贴的安装地址并打开 Harness 的「插件」页。仓库根目录的插件包与榜单版本匹配时使用 GitHub 地址，其他条目使用 `包名@版本`。点「添加插件」，粘贴后按提示确认。Web 版安装时把 `desktop` 换成 `web`。使用旧版 `0.1.0` 时，入口位于「设置 → 插件风向标」，安装命令中的文件名也应与下载版本一致。
 
 卸载使用 `dsh plugin --profile desktop remove dsh-plugin-pulse`（Web 将 profile 换成 `web`）。
 
-从 `v0.1.2` 起，榜单顶部显示当前版本。有更高版本且已上传安装包时，会显示「查看更新」，打开对应的 GitHub Release。
+榜单顶部显示当前版本。升级到 `v0.1.4` 后，Harness 打开时会检查更新。发现更高版本时，在主界面提醒，并在榜单顶部保留「查看更新」。
 
 从 v0.1.3 起，榜单会读取每日发布的公开快照，并显示数据日期。无法刷新时使用上次可用的快照或随包数据。需求榜使用部署方选择的统计服务。
 
@@ -93,14 +93,14 @@ Use Node.js 24. Run `npm run build && npm run preview`, then open the [local pre
 Download the `.tgz` from [GitHub Releases](https://github.com/WinterOne-hub/dsh-plugin-pulse/releases), or run `npm pack` in the repository. Quit Harness Desktop, open a terminal in the directory containing the package, and run the following command.
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.3.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.4.tgz"
 ```
 
 Restart Harness and open **插件风向标** in the left sidebar. **复制 GitHub 地址** copies the repository URL. **去安装** copies a target and opens Harness’s **Plugins** page. It uses the GitHub URL when the root package matches the listed version and `package@version` for other entries. Choose **Add plugin**, paste, and follow the prompts. Use `--profile web` for Harness Web. For `0.1.0`, look under **Settings → 插件风向标** and use the downloaded filename in the install command.
 
 To uninstall, run `dsh plugin --profile desktop remove dsh-plugin-pulse` with the appropriate profile. The bundled snapshot works offline. Public voting requires a configured service.
 
-From `v0.1.2`, the header shows your installed version. If a newer GitHub Release has an install package, an update link opens that release.
+The header shows your installed version. Starting in `v0.1.4`, Plugin Pulse checks for updates when Harness opens. A newer release with an install package triggers a notice and adds a link to the panel header.
 
 ### Ranking rules
 

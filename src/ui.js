@@ -1,6 +1,6 @@
 export function mountPulse(root, {
   core, snapshot, topics, demandUrl = '', demandAuthenticated = false, snapshotUrl = '', issueUrl = '',
-  css, openPluginManager, packageName, packageVersion, releaseRepo
+  css, openPluginManager, packageVersion, updates
 }) {
   const doc = root.ownerDocument
   const host = root.shadowRoot ?? root.attachShadow({ mode: 'open' })
@@ -62,39 +62,6 @@ export function mountPulse(root, {
     return `<button type="button" class="quiet" data-install="${escape(target)}" aria-label="去安装 ${escape(row.name)}" title="${label}，打开插件管理器">去安装 ↗</button>${copy}`
   }
   const rowLink = row => core.githubRepoUrl(row.repo) ?? 'https://www.npmjs.com/package/' + row.name
-  async function checkForUpdate() {
-    const repoUrl = core.githubRepoUrl(releaseRepo)
-    if (!repoUrl || !packageVersion || !packageName) return
-    const cacheKey = 'dsh-plugin-pulse.release.v1:' + releaseRepo + ':' + packageVersion
-    const now = Date.now()
-    const ttl = 12 * 60 * 60 * 1000
-    let cached
-    try { cached = JSON.parse(localStorage.getItem(cacheKey)) } catch { /* continue without storage */ }
-    let version = cached?.version
-    if (!(cached?.expires > now && cached.expires <= now + ttl)) {
-      let expires = now + 60 * 60 * 1000
-      version = null
-      try {
-        const response = await fetch('https://api.github.com/repos/' + releaseRepo + '/releases?per_page=20', {
-          credentials: 'omit', signal: AbortSignal.any([abort.signal, AbortSignal.timeout(6000)])
-        })
-        if (response.ok) {
-          const releases = await response.json()
-          if (Array.isArray(releases)) {
-            version = core.findUpdate(releases, packageVersion, packageName)
-            expires = now + ttl
-          }
-        }
-      } catch { /* the rankings remain usable offline */ }
-      if (disposed) return
-      try { localStorage.setItem(cacheKey, JSON.stringify({ version, expires })) } catch { /* continue without storage */ }
-    }
-    if (!core.isNewerVersion(version, packageVersion)) return
-    const banner = app.querySelector('.update-banner')
-    banner.querySelector('span').textContent = '新版本 v' + version + ' 可用'
-    banner.querySelector('a').href = repoUrl + '/releases/tag/v' + version
-    banner.hidden = false
-  }
   const gridHead = (label, field = '插件') => `<div class="grid-head" aria-hidden="true"><span>#</span><span>${field}</span><span>${label} ↓</span></div>`
   const rowMarkup = (row, rank, value, caption, note = '') => `
     <li class="row">
@@ -296,7 +263,14 @@ export function mountPulse(root, {
   }
   hydrateCategories()
   render()
-  void checkForUpdate()
+  const unsubscribeUpdates = updates?.subscribe(update => {
+    const banner = app.querySelector('.update-banner')
+    banner.hidden = !update
+    if (update) {
+      banner.querySelector('span').textContent = '新版本 v' + update.version + ' 可用'
+      banner.querySelector('a').href = update.url
+    }
+  })
   let refreshingSnapshot = false
   let lastSnapshotCheck = 0
   async function refreshSnapshot() {
@@ -339,6 +313,7 @@ export function mountPulse(root, {
   return () => {
     disposed = true
     abort.abort()
+    unsubscribeUpdates?.()
     for (const timer of copyFeedback.values()) clearTimeout(timer)
     copyFeedback.clear()
     host.replaceChildren()
