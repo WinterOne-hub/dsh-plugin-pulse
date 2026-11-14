@@ -45,7 +45,7 @@ test('snapshot validation rejects malformed remote rows and accepts the bundled 
 })
 const asOf = '2026-11-04'
 const old = { name: 'old', firstRelease: '2026-08-01', downloadsGrowth: 800, stars: 7 }
-const rising = { name: 'new', firstRelease: '2026-10-30', downloadsGrowth: 50, downloads30: 120, stars7: 3 }
+const rising = { name: 'new', firstRelease: '2026-10-18', downloadsGrowth: 50, downloads30: 120, downloads7: 80, previousDownloads7: 30, stars7: 3, starsPrevious7: 1 }
 const shallow = { name: 'tiny', firstRelease: '2026-11-01', downloadsGrowth: 9, stars: 3 }
 const unknown = { name: 'unknown', firstRelease: null, downloadsGrowth: 100, downloads30: 900, stars: null, sharedStars: 9999 }
 const future = { name: 'future', firstRelease: '2026-11-05', downloadsGrowth: 100 }
@@ -57,6 +57,23 @@ test('public signals stay separate and missing values do not enter rankings', ()
   assert.deepEqual(rank(rows, 'trending', 'npm', asOf), [rising])
   assert.deepEqual(rank(rows, 'trending', 'stars', asOf), [rising])
   assert.deepEqual(rank(rows, 'trending', 'npm', null), [])
+})
+
+test('trends balance momentum and scale and keep launches out of rankings', () => {
+  const { justReleased, trend } = makeCore()
+  const item = (name, downloads7, previousDownloads7, extra = {}) => ({
+    name, downloads7, previousDownloads7, firstRelease: '2026-10-01', ...extra
+  })
+  const established = item('established', 20000, 18000)
+  const gaining = item('gaining', 800, 250)
+  const sparse = item('sparse', 20, 1)
+  const launch = item('launch', 20000, 0, { firstRelease: '2026-11-02' })
+  const incomplete = item('incomplete', 800, null)
+  const list = [established, gaining, sparse, launch, incomplete]
+  assert.deepEqual(rank(list, 'trending', 'npm', asOf), [gaining, established])
+  assert.deepEqual(justReleased(list, asOf), [launch])
+  assert.equal(trend({ ...gaining, stars7: 30 }, 'stars', asOf), null)
+  assert.equal(trend({ ...gaining, stars7: 30, starsPrevious7: 10 }, 'stars', asOf).delta, 20)
 })
 
 test('counts require every post-release day, with zeros permitted before release', () => {

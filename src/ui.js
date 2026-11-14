@@ -11,7 +11,7 @@ export function mountPulse(root, {
   const tabNames = { popular: 'popular', trending: 'trending', demand: 'requests' }
   const intros = {
     popular: ['插件热度', '按公开下载量或 GitHub Stars 排序。'],
-    trending: ['新插件增长', '仅统计最近 60 天首次发布的插件。'],
+    trending: ['新插件增长', '按两周增势排序，覆盖近 60 天发布的新插件。'],
     demand: ['功能需求', '没找到合适的插件？告诉我们你需要什么功能。']
   }
   const state = { tab: 'popular', metric: 'npm', query: '', category: '', report: false, counts: [], status: '', busy: false, loadError: false }
@@ -146,20 +146,29 @@ export function mountPulse(root, {
       const date = chosen === 'npm' ? snapshot.npmDay : snapshot.snapshotDay
       const filtered = core.search(snapshot.rows.filter(row => !state.category || row.category === state.category), query)
       const ranked = core.rank(filtered, tab, chosen, date)
+      const launches = tab === 'trending' ? core.justReleased(filtered, date) : []
       const dateText = date ? '数据截至 ' + date + ' UTC' : '等待首份数据'
       const old = date && Date.now() - Date.parse(date) > 4 * 86400000
       markup += `<span class="pill">${escape(dateText + (old ? ' · 可能滞后' : ''))}</span></header>`
       const rankingRows = ranked.map((row, index) => {
         if (tab === 'popular') return rowMarkup(row, index + 1, fmt(chosen === 'npm' ? row.downloads30 : row.stars), chosen === 'npm' ? '近 30 天下载' : '仓库 Stars')
-        return rowMarkup(row, index + 1, '+' + fmt(chosen === 'npm' ? row.downloadsGrowth : row.stars7),
-          chosen === 'npm' ? '近 7 天相对前 7 天' : '近 7 天 Stars 净增',
-          (row.firstRelease ? 'npm 首发 ' + row.firstRelease : '') +
-          (chosen === 'npm' ? ' · 下载 ' + fmt(row.previousDownloads7) + ' → ' + fmt(row.downloads7) : ''))
+        const movement = core.trend(row, chosen, date)
+        const signal = chosen === 'npm' ? '下载' : '新增 Stars'
+        return rowMarkup(row, index + 1, movement.score.toFixed(2),
+          '趋势分', 'npm 首发 ' + row.firstRelease + ' · ' + signal + ' ' +
+          fmt(movement.previous) + ' → ' + fmt(movement.recent) + '（+' + fmt(movement.delta) + '）')
       })
-      if (rankingRows.length) markup += gridHead(tab === 'popular' ? (chosen === 'npm' ? '下载 / 30d' : 'Stars') : '净增 / 7d') + '<ol>' + rankingRows.join('') + '</ol>'
-      else markup += `<div class="empty"><h3>${!filtered.length && query.trim() ? '没找到合适的插件' : '当前没有符合条件的插件'}</h3><p>试试换个关键词、分类或指标。</p>${query.trim() ? '<button data-action="report">我需要这个功能</button>' : ''}</div>`
+      if (rankingRows.length) markup += gridHead(tab === 'popular' ? (chosen === 'npm' ? '下载 / 30d' : 'Stars') : '趋势分') + '<ol>' + rankingRows.join('') + '</ol>'
+      else {
+        const heading = !filtered.length && query.trim() ? '没找到合适的插件' : tab === 'trending' ? '暂无符合条件的趋势记录' : '当前没有符合条件的插件'
+        const hint = tab === 'trending' && filtered.length ? '趋势榜按两个完整的 7 天窗口比较。' : '试试换个关键词、分类或指标。'
+        markup += `<div class="empty"><h3>${heading}</h3><p>${hint}</p>${query.trim() && !filtered.length ? '<button data-action="report">我需要这个功能</button>' : ''}</div>`
+      }
+      if (launches.length) markup += '<h3 class="subhead">刚发布</h3><ul>' + launches.map(row =>
+        rowMarkup(row, null, chosen === 'npm' ? fmt(row.downloads7) : fmt(row.stars),
+          chosen === 'npm' ? '近 7 天下载' : '仓库 Stars', 'npm 首发 ' + row.firstRelease)).join('') + '</ul>'
       if (tab === 'popular' || query.trim()) {
-        const unranked = filtered.filter(row => !ranked.includes(row))
+        const unranked = filtered.filter(row => !ranked.includes(row) && !launches.includes(row))
         if (unranked.length) markup += `<h3 class="subhead">${tab === 'popular' && chosen === 'stars' ? '仓库级指标及暂无 Stars 的条目' : '其他目录条目'}</h3><ul>` + unranked.map(row =>
           rowMarkup(row, null, chosen === 'stars' && tab === 'popular' ? fmt(row.sharedStars) : '—',
             chosen === 'stars' && tab === 'popular' && Number.isFinite(row.sharedStars) ? '共享仓库 Stars' : '未参与此榜')).join('') + '</ul>'
@@ -277,7 +286,8 @@ export function mountPulse(root, {
   metric.addEventListener('change', () => { state.metric = metric.value; render() })
   const snapshotKey = 'dsh-plugin-pulse.snapshot.v1:' + snapshotUrl
   const newerSnapshot = incoming => core.validSnapshot(incoming) &&
-    (!snapshot.generatedAt || incoming.generatedAt >= snapshot.generatedAt)
+    (!snapshot.generatedAt || (incoming.generatedAt > snapshot.generatedAt &&
+      incoming.npmDay >= snapshot.npmDay && incoming.snapshotDay >= snapshot.snapshotDay))
   if (snapshotUrl) {
     try {
       const cached = JSON.parse(localStorage.getItem(snapshotKey))
@@ -287,9 +297,17 @@ export function mountPulse(root, {
   hydrateCategories()
   render()
   void checkForUpdate()
-  if (snapshotUrl) void (async () => {
+  let refreshingSnapshot = false
+  let lastSnapshotCheck = 0
+  async function refreshSnapshot() {
+    if (!snapshotUrl || refreshingSnapshot || Date.now() - lastSnapshotCheck < 60000) return
+    refreshingSnapshot = true
+    lastSnapshotCheck = Date.now()
     try {
-      const response = await fetch(snapshotUrl, { credentials: 'omit', signal: abort.signal })
+      const response = await fetch(snapshotUrl, {
+        cache: 'no-cache', credentials: 'omit',
+        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(10000)])
+      })
       if (!response.ok || !response.body) return
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
@@ -309,7 +327,15 @@ export function mountPulse(root, {
       render()
       try { localStorage.setItem(snapshotKey, JSON.stringify(incoming)) } catch { /* memory cache remains available */ }
     } catch { /* last valid snapshot remains available */ }
-  })()
+    finally { refreshingSnapshot = false }
+  }
+  if (snapshotUrl) {
+    const window = doc.defaultView
+    void refreshSnapshot()
+    window?.addEventListener('focus', refreshSnapshot, { signal: abort.signal })
+    const refreshTimer = setInterval(refreshSnapshot, 60 * 60 * 1000)
+    abort.signal.addEventListener('abort', () => clearInterval(refreshTimer), { once: true })
+  }
   return () => {
     disposed = true
     abort.abort()

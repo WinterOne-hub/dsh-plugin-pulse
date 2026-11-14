@@ -25,12 +25,14 @@ const [raw, topics, css, manifest] = await Promise.all([
 const snapshot = JSON.parse(raw)
 if (snapshot.generatedAt !== null && !makeCore().validSnapshot(snapshot)) throw new Error('Invalid bundled snapshot')
 const repository = new URL(manifest.repository.url.replace(/^git\+/, ''))
+const releaseRepo = repository.hostname === 'github.com' ? repository.pathname.slice(1).replace(/\.git$/, '') : ''
+const defaultSnapshotUrl = releaseRepo ? 'https://raw.githubusercontent.com/' + releaseRepo + '/main/data/snapshot.json' : ''
 const options = JSON.stringify({
   snapshot, topics: JSON.parse(topics), css,
   packageName: manifest.name, packageVersion: manifest.version,
-  releaseRepo: repository.hostname === 'github.com' ? repository.pathname.slice(1).replace(/\.git$/, '') : '',
+  releaseRepo,
   demandUrl: url('PULSE_DEMAND_URL'), demandAuthenticated: process.env.PULSE_DEMAND_AUTHENTICATED === '1',
-  snapshotUrl: url('PULSE_SNAPSHOT_URL'), issueUrl: url('PULSE_ISSUE_URL')
+  snapshotUrl: process.env.PULSE_SNAPSHOT_URL === undefined ? defaultSnapshotUrl : url('PULSE_SNAPSHOT_URL'), issueUrl: url('PULSE_ISSUE_URL')
 })
 const shared = `const makeCore = ${makeCore.toString()};
 const mountPulse = ${mountPulse.toString()};

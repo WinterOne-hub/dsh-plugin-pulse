@@ -34,7 +34,7 @@ npm pack
 在启动过一次的 Harness Desktop 中，先完全退出应用，再在同一目录运行：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.1.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.3.tgz"
 ```
 
 重启后，在左侧栏打开「插件风向标」。「复制 GitHub 地址」会复制仓库链接。「去安装」会复制可粘贴的安装地址并打开 Harness 的「插件」页。仓库根目录的插件包与榜单版本匹配时使用 GitHub 地址，其他条目使用 `包名@版本`。点「添加插件」，粘贴后按提示确认。Web 版安装时把 `desktop` 换成 `web`。使用旧版 `0.1.0` 时，入口位于「设置 → 插件风向标」，安装命令中的文件名也应与下载版本一致。
@@ -43,12 +43,12 @@ dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.1.tgz"
 
 从 `v0.1.2` 起，榜单顶部显示当前版本。有更高版本且已上传安装包时，会显示「查看更新」，打开对应的 GitHub Release。
 
-安装包带公开榜单快照。需求榜使用部署方选择的统计服务；默认包未预设任何外部地址。
+从 v0.1.3 起，榜单会读取每日发布的公开快照，并显示数据日期。无法刷新时使用上次可用的快照或随包数据。需求榜使用部署方选择的统计服务。
 
 ## 排名口径
 
 - **最受欢迎**：对有数据的插件按 npm 最近 30 个完整统计日下载量排序，或按 GitHub 仓库 Stars 排序。共享主项目的 Stars 单列。下载量可能包括自动化拉取；Stars 反映仓库关注度。
-- **新插件飙升**：只看过去 60 天内在 npm 首次发布 DSH bundle 的插件。下载量以最近 7 日减前 7 日计算，净增至少 10 才上榜；切换到 Stars 时使用相距 7 个 UTC 日期的采集快照，净增至少 1。未发布的日期可计零，缺失的发布后日期不可计零。当前首批目录只覆盖 npm 发布的插件，暂未收录纯 Git 安装源。
+- **新插件飙升**：覆盖过去 60 天首发的 npm 插件，比较两个完整的 7 天窗口。发布未满 14 天的插件单列为「刚发布」。趋势分使用 `ln(1 + 增量) × ln(1 + 增量 ÷ (前周基数 + 平滑值))`。下载量用 100 平滑，最近一周至少 50 次且净增至少 10。Stars 比较两周各自的净增，用 5 平滑，最近一周至少净增 3 颗且比前周多增至少 1 颗。
 - **最期待功能**：按最近 30 天的需求提交数排序。找不到合适的主题时，可通过 GitHub 表单提议新主题（需部署方开启）。
 
 目录根据维护清单抓取 npm 注册表，并核验最新版本声明了有效的 `dsh.bundle`，没有运行这些第三方插件。兼容范围来自发布包声明；缺失时不推定兼容。GitHub 采集按 UTC 保存 Stars 计数；npm 默认延后两天取窗口终点，给数据更新留余量。GitHub 和 npm 数据是独立信号，不用一个综合分混排。功能简介由项目编写。见[榜单数据来源](data/README.md)。
@@ -60,7 +60,7 @@ npm run collect       # 可选环境变量 GITHUB_TOKEN，提高公共 API 额�
 npm run check
 ```
 
-`.github/workflows/collect.yml` 默认关闭。确认 GitHub 仓库允许采集任务更新默认分支后，将仓库的 Actions 变量 `PULSE_ENABLE_COLLECTION` 设为 `true`，再手动运行一次，检查 `data/snapshot.json` 和 `data/stars.json` 是否更新。也可将 `data/snapshot.json` 放到公开静态托管，通过 `PULSE_SNAPSHOT_URL` 在打包时配置。请求失败或数据无效时，插件优先保留上次验证通过的快照，其次使用内置快照。
+在 GitHub Actions 手动运行 `Refresh public data` 验证采集。定时任务由 `PULSE_ENABLE_COLLECTION=true` 启用。新版默认从 GitHub 读取公开快照，也可在打包时用 `PULSE_SNAPSHOT_URL` 指定其他地址。任务还会在运行摘要中列出 npm 候选插件。维护者核对安装来源，并在 `data/seeds.json` 补齐中英简介后收录。
 
 公开服务使用 `npm run serve`，默认关闭投票。要接收公开投票，需通过 HTTPS 身份网关验证账号，并在后端配置两个不同的随机密钥 `PULSE_GATEWAY_SECRET` 和 `PULSE_VOTER_KEY`（各至少 32 字符）。后端默认监听 `127.0.0.1:4173`。仅允许网关访问后端，由网关删除客户端传入的 `X-Pulse-Gateway-Secret` 和 `X-Pulse-User`，然后在已认证的请求中分别写入共享密钥与稳定的账号 ID。网关需为登录和 API 请求配置限流。
 
@@ -93,7 +93,7 @@ Use Node.js 24. Run `npm run build && npm run preview`, then open the [local pre
 Download the `.tgz` from [GitHub Releases](https://github.com/WinterOne-hub/dsh-plugin-pulse/releases), or run `npm pack` in the repository. Quit Harness Desktop, open a terminal in the directory containing the package, and run the following command.
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.1.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.3.tgz"
 ```
 
 Restart Harness and open **插件风向标** in the left sidebar. **复制 GitHub 地址** copies the repository URL. **去安装** copies a target and opens Harness’s **Plugins** page. It uses the GitHub URL when the root package matches the listed version and `package@version` for other entries. Choose **Add plugin**, paste, and follow the prompts. Use `--profile web` for Harness Web. For `0.1.0`, look under **Settings → 插件风向标** and use the downloaded filename in the install command.
@@ -105,7 +105,7 @@ From `v0.1.2`, the header shows your installed version. If a newer GitHub Releas
 ### Ranking rules
 
 - **Popular.** Rank by npm downloads over 30 complete days or GitHub stars. Shared repository stars appear separately. Download counts can include automated activity.
-- **Trending.** Include DSH bundles first published on npm within 60 days. Compare the latest seven days of downloads with the preceding seven and require a gain of at least 10. The stars view requires two snapshots seven UTC days apart and a gain of at least one star. Missing days after publication stay unknown. The initial catalog covers npm packages.
+- **Trending.** Include DSH bundles first published on npm within 60 days. Compare two complete weeks using `ln(1 + gain) × ln(1 + gain / (previous week + smoothing))`, with negative baselines treated as zero. Downloads use a smoothing value of 100, a minimum of 50 downloads in the latest week, and a gain of at least 10. Weekly star gains use a smoothing value of 5, a minimum of 3 net new stars this week, and an increase of at least 1 over the previous week. Plugins released less than 14 days ago appear under New Releases.
 - **Requests.** Rank by submissions over the past 30 days. Where enabled, users can propose new topics through a GitHub issue form.
 
 The collector checks the latest package for a `dsh.bundle` declaration and reads compatibility from package metadata. It records GitHub stars by UTC date and allows two days for npm download figures to settle. Plugin summaries are written for this project. [Data sources](data/README.md)
@@ -113,7 +113,7 @@ The collector checks the latest package for a `dsh.bundle` declaration and reads
 ### Refresh data and enable voting
 
 - **Data.** Run `npm run collect` to refresh snapshots. An optional `GITHUB_TOKEN` raises the GitHub API limit. Run `npm run check` to verify the build. To enable scheduled collection, confirm that Actions can update the default branch, set `PULSE_ENABLE_COLLECTION=true` as a repository variable, and run the workflow manually once. Check both `data/snapshot.json` and `data/stars.json`.
-- **Snapshots.** Host `data/snapshot.json` as a public static file and set `PULSE_SNAPSHOT_URL` at build time. If a refresh fails or the data is invalid, the plugin uses the most recent valid snapshot or the bundled copy.
+- **Snapshots.** The plugin reads the public GitHub snapshot by default. Set `PULSE_SNAPSHOT_URL` at build time to use another endpoint. A failed refresh falls back to the last valid snapshot or the bundled copy. The workflow summary lists npm candidates for review before they are added to `data/seeds.json`.
 - **Public voting.** Run `npm run serve` behind an HTTPS identity gateway. The server binds to `127.0.0.1:4173` by default and voting starts disabled. Configure distinct random values of at least 32 characters for `PULSE_GATEWAY_SECRET` and `PULSE_VOTER_KEY`. Allow only the gateway to reach the backend. The gateway must strip incoming `X-Pulse-Gateway-Secret` and `X-Pulse-User` headers, then set them to the shared secret and a stable authenticated account ID. Rate-limit login and API requests.
 - **Storage and browser access.** Set `PULSE_DB` to a persistent file separate from the local preview database. Add allowed browser origins, including the hosted UI, to `PULSE_ALLOWED_ORIGINS`. For cross-site access, forward `OPTIONS /api/votes` and allow the browser to send the gateway session cookie. Keep `PULSE_VOTER_KEY` stable for account deduplication.
 - **Build options.** Set `PULSE_DEMAND_URL` to the service’s `/api` URL and `PULSE_DEMAND_AUTHENTICATED=1` for public voting, then run `npm pack`. Set `PULSE_ISSUE_URL` to link a public topic form. For local Web testing, use `http://127.0.0.1:4173/api` with the Harness Web origin in `PULSE_ALLOWED_ORIGINS`. External requests from the desktop app still need testing against the deployed gateway.

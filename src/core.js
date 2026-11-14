@@ -54,7 +54,8 @@ export function makeCore() {
           !boundedText(row.version, 128) || !/^[a-z0-9.+-]+$/i.test(row.version) ||
           !(row.engines === null || boundedText(row.engines, 250)) || !(row.firstRelease === null || validDate(row.firstRelease)) ||
           ![row.downloads30, row.downloads7, row.previousDownloads7, row.stars, row.sharedStars].every(validCount) ||
-          ![row.downloadsGrowth, row.stars7].every(validChange)) return false
+          ![row.downloadsGrowth, row.stars7].every(validChange) ||
+          !(row.starsPrevious7 === undefined || validChange(row.starsPrevious7))) return false
       names.add(row.name)
     }
     return true
@@ -79,15 +80,34 @@ export function makeCore() {
   }
   const sortBy = (rows, key) => rows.filter(row => Number.isFinite(row[key]))
     .sort((a, b) => b[key] - a[key] || a.name.localeCompare(b.name, 'en'))
+  function trend(row, metric, asOf) {
+    if (!asOf || !row.firstRelease || row.firstRelease < day(asOf, -59) ||
+        row.firstRelease > day(asOf, -14)) return null
+    const stars = metric === 'stars'
+    const recent = stars ? row.stars7 : row.downloads7
+    const previous = stars ? row.starsPrevious7 : row.previousDownloads7
+    if (!Number.isSafeInteger(recent) || !Number.isSafeInteger(previous)) return null
+    const delta = recent - previous
+    if (stars ? recent < 3 || delta < 1 : recent < 50 || previous < 0 || delta < 10) return null
+    const smoothing = stars ? 5 : 100
+    const score = Math.log1p(delta) * Math.log1p(delta / (Math.max(0, previous) + smoothing))
+    return { recent, previous, delta, score }
+  }
+
   function rank(rows, tab, metric, asOf) {
-    if (tab === 'popular') {
-      return sortBy(rows, metric === 'stars' ? 'stars' : 'downloads30')
-    }
+    if (tab === 'popular') return sortBy(rows, metric === 'stars' ? 'stars' : 'downloads30')
+    return rows.map(row => ({ row, trend: trend(row, metric, asOf) }))
+      .filter(entry => entry.trend)
+      .sort((a, b) => b.trend.score - a.trend.score || b.trend.delta - a.trend.delta ||
+        a.row.name.localeCompare(b.row.name, 'en'))
+      .map(entry => entry.row)
+  }
+
+  function justReleased(rows, asOf) {
     if (!asOf) return []
-    const key = metric === 'stars' ? 'stars7' : 'downloadsGrowth'
-    const cutoff = day(asOf, -59)
-    return sortBy(rows.filter(row => row.firstRelease && row.firstRelease >= cutoff &&
-      row.firstRelease <= asOf && row[key] >= (metric === 'stars' ? 1 : 10)), key)
+    const cutoff = day(asOf, -13)
+    return rows.filter(row => row.firstRelease && row.firstRelease >= cutoff && row.firstRelease <= asOf)
+      .sort((a, b) => b.firstRelease.localeCompare(a.firstRelease) || a.name.localeCompare(b.name, 'en'))
   }
   function sumWindow(counts, end, width, firstRelease) {
     let sum = 0
@@ -99,5 +119,5 @@ export function makeCore() {
     }
     return sum
   }
-  return { day, search, suggest, rank, sumWindow, validSnapshot, githubRepoUrl, matchesGithubManifest, installTarget, isNewerVersion, findUpdate }
+  return { day, search, suggest, rank, trend, justReleased, sumWindow, validSnapshot, githubRepoUrl, matchesGithubManifest, installTarget, isNewerVersion, findUpdate }
 }

@@ -16,6 +16,10 @@ const npmDay = day(now, -2)
 const token = process.env.GITHUB_TOKEN
 const failures = []
 const githubRequests = new Map()
+const npmRange = 'https://api.npmjs.org/downloads/range/' + day(npmDay, -29) + ':' + npmDay + '/'
+const unscoped = seeds.filter(({ name }) => !name.startsWith('@') &&
+  (previous.npmDay !== npmDay || previous.rows.find(row => row.name === name)?.downloads30 == null))
+const bulkDownloads = new Map()
 let nextDownloadAt = 0
 async function npmDownloads(url) {
   const start = Math.max(Date.now(), nextDownloadAt)
@@ -63,6 +67,14 @@ async function githubInstallable(repo, name, version) {
   } catch { return false }
 }
 
+for (let i = 0; i < unscoped.length; i += 40) {
+  const names = unscoped.slice(i, i + 40).map(({ name }) => name)
+  if (names.length < 2) continue
+  const batch = await npmDownloads(npmRange + names.map(encodeURIComponent).join(','))
+    .catch(err => { failures.push('npm batch: ' + err.message); return {} })
+  for (const name of names) if (Array.isArray(batch?.[name]?.downloads)) bulkDownloads.set(name, batch[name])
+}
+
 async function collect({ name, category, repo, description, descriptionEn, sharedStars = false }) {
   const encoded = encodeURIComponent(name)
   const old = previous.rows.find(row => row.name === name)
@@ -72,7 +84,7 @@ async function collect({ name, category, repo, description, descriptionEn, share
     failures.push('npm metadata ' + name + ': ' + err.message)
     if (!old) return null
     return { ...old, title: name, description, descriptionEn, category, repo, tags: [], githubInstall: false,
-      ...(previous.snapshotDay === snapshotDay ? {} : { stars: null, sharedStars: null, stars7: null }),
+      ...(previous.snapshotDay === snapshotDay ? {} : { stars: null, sharedStars: null, stars7: null, starsPrevious7: null }),
       ...(previous.npmDay === npmDay ? {} : { downloads30: null, downloads7: null, previousDownloads7: null, downloadsGrowth: null })
     }
   }
@@ -86,7 +98,7 @@ async function collect({ name, category, repo, description, descriptionEn, share
   const firstRelease = bundleDates[0]?.slice(0, 10) ?? null
   const currentDownloads = previous.npmDay === npmDay && old?.downloads30 != null
   const [download, repository, githubInstall] = await Promise.all([
-    currentDownloads ? null : npmDownloads('https://api.npmjs.org/downloads/range/' + day(npmDay, -29) + ':' + npmDay + '/' + encoded)
+    currentDownloads ? null : bulkDownloads.get(name) ?? npmDownloads(npmRange + encoded)
       .catch(err => { failures.push('npm downloads ' + name + ': ' + err.message); return null }),
     github(repo),
     githubInstallable(repo, name, latest.version)
@@ -99,9 +111,12 @@ async function collect({ name, category, repo, description, descriptionEn, share
   const repoHistory = repository?.id ? (history[repository.id] ??= {}) : {}
   if (stars !== null) repoHistory[snapshotDay] = stars
   const baseline = repoHistory[day(snapshotDay, -7)]
+  const previousBaseline = repoHistory[day(snapshotDay, -14)]
+  const starsPrevious7 = !sharedStars && Number.isSafeInteger(baseline) && Number.isSafeInteger(previousBaseline)
+    ? baseline - previousBaseline : null
   return {
     name, title: name, description, descriptionEn, category, tags: [],
-    repo, githubInstall, version: latest.version, engines: typeof latest.engines?.dsh === 'string' ? latest.engines.dsh.slice(0, 250) : null, firstRelease,
+    repo, githubInstall, starsPrevious7, version: latest.version, engines: typeof latest.engines?.dsh === 'string' ? latest.engines.dsh.slice(0, 250) : null, firstRelease,
     downloads30, downloads7, previousDownloads7,
     downloadsGrowth: downloads7 === null || previousDownloads7 === null ? null : downloads7 - previousDownloads7,
     stars: sharedStars ? null : stars ?? (previous.snapshotDay === snapshotDay ? old?.stars ?? null : null),
@@ -114,8 +129,12 @@ async function collect({ name, category, repo, description, descriptionEn, share
 const rows = []
 for (let i = 0; i < seeds.length; i += 5) rows.push(...await Promise.all(seeds.slice(i, i + 5).map(collect)))
 const valid = rows.filter(Boolean)
-if (!valid.some(row => row.downloads30 !== null || row.stars !== null || row.sharedStars !== null)) {
-  throw new Error('No live metrics; existing snapshot preserved. ' + failures.join(' | '))
+const downloadCoverage = valid.filter(row => row.downloads30 !== null).length
+const starsCoverage = valid.filter(row => row.stars !== null || row.sharedStars !== null).length
+const minimumCoverage = Math.ceil(valid.length * 0.8)
+if (!valid.length || downloadCoverage < minimumCoverage || starsCoverage < minimumCoverage) {
+  throw new Error('Incomplete metrics; existing snapshot preserved. ' +
+    `Downloads: ${downloadCoverage}/${valid.length}, Stars: ${starsCoverage}/${valid.length}. ` + failures.join(' | '))
 }
 for (const repoHistory of Object.values(history)) {
   for (const date of Object.keys(repoHistory)) if (date < day(snapshotDay, -35)) delete repoHistory[date]
