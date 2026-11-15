@@ -39,6 +39,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { 
 .console-meta { display:flex; align-items:center; gap:8px; }
 .plugin-version { color:#e6edf7; border:1px solid #4a5b71; border-radius:4px; padding:0 4px; white-space:nowrap; }
 .update-banner { display:flex; justify-content:space-between; flex-wrap:wrap; gap:3px 12px; padding:6px clamp(10px,3.2cqi,18px); background:var(--active); border-bottom:1px solid var(--line); font-size:12px; }
+.update-actions { display:flex; align-items:center; gap:10px; }
 .update-banner a { white-space:nowrap; }
 .console-body { padding-block:13px 15px; }
 .search { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-top:12px; }

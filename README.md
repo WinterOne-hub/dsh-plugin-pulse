@@ -41,7 +41,7 @@ dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.4.tgz"
 
 卸载使用 `dsh plugin --profile desktop remove dsh-plugin-pulse`（Web 将 profile 换成 `web`）。
 
-榜单顶部显示当前版本。升级到 `v0.1.4` 后，Harness 打开时会检查更新。发现更高版本时，在主界面提醒，并在榜单顶部保留「查看更新」。
+榜单顶部显示当前版本。Harness 启动时会检查更新。发现新版后，点主界面提醒或榜单顶部的「立即更新」，即可在 Harness 内下载并安装。安装后按提示重启。已安装旧安装包的 `v0.1.4` 用户需要用本次更新后的附件重装一次，才能使用一键更新。
 
 从 v0.1.3 起，榜单会读取每日发布的公开快照，并显示数据日期。无法刷新时使用上次可用的快照或随包数据。需求榜使用部署方选择的统计服务。
 
@@ -100,7 +100,7 @@ Restart Harness and open **插件风向标** in the left sidebar. **复制 GitHu
 
 To uninstall, run `dsh plugin --profile desktop remove dsh-plugin-pulse` with the appropriate profile. The bundled snapshot works offline. Public voting requires a configured service.
 
-The header shows your installed version. Starting in `v0.1.4`, Plugin Pulse checks for updates when Harness opens. A newer release with an install package triggers a notice and adds a link to the panel header.
+The header shows your installed version. Plugin Pulse checks for updates when Harness opens. Choose **立即更新** (Update now) in the notice or panel to install the new release inside Harness, then restart when prompted. If you installed the earlier `v0.1.4` archive, reinstall once from the refreshed attachment to enable this action.
 
 ### Ranking rules
 

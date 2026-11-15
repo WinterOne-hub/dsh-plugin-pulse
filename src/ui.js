@@ -34,7 +34,7 @@ export function mountPulse(root, {
         </div>
       </div>
     </header>
-    <div class="update-banner" role="status" hidden><span></span><a target="_blank" rel="noreferrer">查看更新 ↗</a></div>
+    <div class="update-banner" hidden><span role="status"></span><div class="update-actions"><button type="button" data-action="update" hidden>立即更新</button><a target="_blank" rel="noreferrer">发布说明 ↗</a></div></div>
     <nav aria-label="榜单">${Object.entries(tabs).map(([key, label]) => `<button type="button" data-tab="${key}">${label}<small aria-hidden="true">${tabNames[key]}</small></button>`).join('')}</nav>
     <div class="toolbar">
       <label>分类 <select id="pulse-category"><option value="">全部分类</option></select></label>
@@ -181,6 +181,7 @@ export function mountPulse(root, {
     if (tab) { state.tab = tab; render(); if (tab === 'demand') void loadDemand() }
     if (topic || action === 'report') openReport(topic)
     if (action === 'search') input.focus()
+    if (action === 'update') void updates?.install()
     if (action === 'close') { state.report = false; renderReport(); app.querySelector('[data-action=report]').focus() }
     const value = install || copy
     if (value) {
@@ -267,7 +268,17 @@ export function mountPulse(root, {
     const banner = app.querySelector('.update-banner')
     banner.hidden = !update
     if (update) {
-      banner.querySelector('span').textContent = '新版本 v' + update.version + ' 可用'
+      const labels = {
+        available: '新版本 v' + update.version + ' 可用',
+        installing: '正在下载并安装 v' + update.version + '…',
+        restart: '更新已安装，请重启 Harness 生效。',
+        error: '更新未完成，请重试或打开发布说明。'
+      }
+      banner.querySelector('span').textContent = labels[update.phase]
+      const button = banner.querySelector('button')
+      button.hidden = !openPluginManager || update.phase === 'restart'
+      button.disabled = update.phase === 'installing'
+      button.textContent = update.phase === 'error' ? '重试更新' : '立即更新'
       banner.querySelector('a').href = update.url
     }
   })

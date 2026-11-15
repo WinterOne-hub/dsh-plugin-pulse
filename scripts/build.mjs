@@ -60,11 +60,12 @@ const loader = `window.__ModuleLoader__.load({
         createElement('div', { ref: target, style: { maxWidth: 1050, margin: '0 auto' } }));
     }
     let notifiedVersion;
-    function UpdateNotice() {
+    function UpdateNotice({ openPulse }) {
       const [notice, setNotice] = useState(null);
       useEffect(() => {
         const unsubscribe = updates.subscribe(update => {
-          if (!update || notifiedVersion === update.version) return;
+          if (update?.phase !== 'available') { setNotice(null); return; }
+          if (notifiedVersion === update.version) return;
           notifiedVersion = update.version;
           setNotice(update);
         });
@@ -78,7 +79,7 @@ const loader = `window.__ModuleLoader__.load({
         text: '插件风向标 v' + notice.version + ' 可用',
         holdMs: 12000,
         actions: [
-          { label: '查看更新', onClick: () => { window.open(notice.url, '_blank', 'noopener,noreferrer'); close(); } },
+          { label: '立即更新', onClick: () => { openPulse(); close(); void updates.install(); } },
           { label: '稍后', onClick: close }
         ],
         onDone: close
@@ -88,10 +89,17 @@ const loader = `window.__ModuleLoader__.load({
       inject: ['slots', 'layout'],
       apply(ctx) {
         const openPluginManager = () => ctx.layout.selectPanel('plugins');
+        const openPulse = () => ctx.layout.selectPanel(panelId);
+        ctx.inject(['remote', 'remote.pluginManager'], scope => {
+          scope.effect(() => {
+            updates.usePluginManager(() => scope.remote.pluginManager);
+            return () => updates.usePluginManager(undefined);
+          });
+        });
         const MainPanel = () => createElement(Panel, { openPluginManager });
         ctx.slots.inject('shell.overlay', () => ctx.slots.register({
           name: 'shell.overlay', id: 'dsh-plugin-pulse.update-notice'
-        }, UpdateNotice));
+        }, () => createElement(UpdateNotice, { openPulse })));
         ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: panelId }, MainPanel));
         ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
           name: 'sidebar.panellist', id: panelId, order: 5, label: '插件风向标'
