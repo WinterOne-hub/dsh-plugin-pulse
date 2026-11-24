@@ -7,11 +7,11 @@ export function mountPulse(root, {
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c])
   const pretty = new Intl.NumberFormat('zh-CN')
   const fmt = value => Number.isSafeInteger(value) ? pretty.format(value) : '—'
-  const tabs = { popular: '最受欢迎', trending: '新插件飙升', demand: '最期待功能' }
+  const tabs = { popular: '最受欢迎', trending: '插件趋势', demand: '最期待功能' }
   const tabNames = { popular: 'popular', trending: 'trending', demand: 'requests' }
   const intros = {
     popular: ['插件热度', '按公开下载量或 GitHub Stars 排序。'],
-    trending: ['新插件增长', '按两周增势排序，覆盖近 60 天发布的新插件。'],
+    trending: ['插件增长', '按近期下载增长或新增 Stars 排序。'],
     demand: ['功能需求', '没找到合适的插件？告诉我们你需要什么功能。']
   }
   const state = { tab: 'popular', metric: 'npm', query: '', category: '', report: false, counts: [], status: '', busy: false, loadError: false }
@@ -120,15 +120,16 @@ export function mountPulse(root, {
       const rankingRows = ranked.map((row, index) => {
         if (tab === 'popular') return rowMarkup(row, index + 1, fmt(chosen === 'npm' ? row.downloads30 : row.stars), chosen === 'npm' ? '近 30 天下载' : '仓库 Stars')
         const movement = core.trend(row, chosen, date)
-        const signal = chosen === 'npm' ? '下载' : '新增 Stars'
+        const movementText = chosen === 'npm'
+          ? '周下载 ' + fmt(movement.previous) + ' → ' + fmt(movement.recent) + '（+' + fmt(movement.delta) + '）'
+          : '近 7 天新增 Stars +' + fmt(movement.recent)
         return rowMarkup(row, index + 1, movement.score.toFixed(2),
-          '趋势分', 'npm 首发 ' + row.firstRelease + ' · ' + signal + ' ' +
-          fmt(movement.previous) + ' → ' + fmt(movement.recent) + '（+' + fmt(movement.delta) + '）')
+          '趋势分', 'npm 首发 ' + row.firstRelease + ' · ' + movementText)
       })
       if (rankingRows.length) markup += gridHead(tab === 'popular' ? (chosen === 'npm' ? '下载 / 30d' : 'Stars') : '趋势分') + '<ol>' + rankingRows.join('') + '</ol>'
       else {
         const heading = !filtered.length && query.trim() ? '没找到合适的插件' : tab === 'trending' ? '暂无符合条件的趋势记录' : '当前没有符合条件的插件'
-        const hint = tab === 'trending' && filtered.length ? '趋势榜按两个完整的 7 天窗口比较。' : '试试换个关键词、分类或指标。'
+        const hint = tab === 'trending' && filtered.length ? '试试切换指标，查看近期下载增长或新增 Stars。' : '试试换个关键词、分类或指标。'
         markup += `<div class="empty"><h3>${heading}</h3><p>${hint}</p>${query.trim() && !filtered.length ? '<button data-action="report">我需要这个功能</button>' : ''}</div>`
       }
       if (launches.length) markup += '<h3 class="subhead">刚发布</h3><ul>' + launches.map(row =>

@@ -45,7 +45,7 @@ test('snapshot validation rejects malformed remote rows and accepts the bundled 
 })
 const asOf = '2026-11-04'
 const old = { name: 'old', firstRelease: '2026-08-01', downloadsGrowth: 800, stars: 7 }
-const rising = { name: 'new', firstRelease: '2026-10-18', downloadsGrowth: 50, downloads30: 120, downloads7: 80, previousDownloads7: 30, stars7: 3, starsPrevious7: 1 }
+const rising = { name: 'new', firstRelease: '2026-10-18', downloadsGrowth: 50, downloads30: 120, downloads7: 80, previousDownloads7: 30, stars: 7, stars7: 3, starsPrevious7: 1 }
 const shallow = { name: 'tiny', firstRelease: '2026-11-01', downloadsGrowth: 9, stars: 3 }
 const unknown = { name: 'unknown', firstRelease: null, downloadsGrowth: 100, downloads30: 900, stars: null, sharedStars: 9999 }
 const future = { name: 'future', firstRelease: '2026-11-05', downloadsGrowth: 100 }
@@ -53,7 +53,7 @@ const rows = [old, rising, shallow, unknown, future]
 
 test('public signals stay separate and missing values do not enter rankings', () => {
   assert.deepEqual(rank(rows, 'popular', 'npm', asOf), [unknown, rising])
-  assert.deepEqual(rank(rows, 'popular', 'stars', asOf), [old, shallow])
+  assert.deepEqual(rank(rows, 'popular', 'stars', asOf), [rising, old, shallow])
   assert.deepEqual(rank(rows, 'trending', 'npm', asOf), [rising])
   assert.deepEqual(rank(rows, 'trending', 'stars', asOf), [rising])
   assert.deepEqual(rank(rows, 'trending', 'npm', null), [])
@@ -70,10 +70,38 @@ test('trends balance momentum and scale and keep launches out of rankings', () =
   const launch = item('launch', 20000, 0, { firstRelease: '2026-11-02' })
   const incomplete = item('incomplete', 800, null)
   const list = [established, gaining, sparse, launch, incomplete]
-  assert.deepEqual(rank(list, 'trending', 'npm', asOf), [gaining, established])
+  assert.deepEqual(rank(list, 'trending', 'npm', asOf), [gaining, established, sparse])
   assert.deepEqual(justReleased(list, asOf), [launch])
   assert.equal(trend({ ...gaining, stars7: 30 }, 'stars', asOf), null)
-  assert.equal(trend({ ...gaining, stars7: 30, starsPrevious7: 10 }, 'stars', asOf).delta, 20)
+  assert.equal(trend({ ...gaining, stars: 50, stars7: 30, starsPrevious7: 10 }, 'stars', asOf).delta, 30)
+})
+
+test('mature plugins and small positive download gains can enter trends', () => {
+  const { trend } = makeCore()
+  const row = { name: 'mature', firstRelease: '2026-01-01', downloads7: 20, previousDownloads7: 19 }
+  assert.equal(trend(row, 'npm', asOf).delta, 1)
+  assert.deepEqual(rank([row], 'trending', 'npm', asOf), [row])
+  for (const extra of [
+    { downloads7: 19 }, { previousDownloads7: 20 }, { previousDownloads7: 21 },
+    { previousDownloads7: null }, { previousDownloads7: -1 }, { firstRelease: null },
+    { firstRelease: day(asOf, -13) }, { firstRelease: day(asOf, 1) }
+  ]) assert.equal(trend({ ...row, ...extra }, 'npm', asOf), null)
+  assert.ok(trend({ ...row, firstRelease: day(asOf, -14) }, 'npm', asOf))
+})
+
+test('star trends need one weekly gain and balance volume with relative growth', () => {
+  const { trend } = makeCore()
+  const row = { name: 'growing', firstRelease: '2026-01-01', stars: 101, stars7: 1 }
+  assert.equal(trend(row, 'stars', asOf).delta, 1)
+  assert.equal(trend({ ...row, starsPrevious7: 10 }, 'stars', asOf).score,
+    trend(row, 'stars', asOf).score)
+  for (const extra of [{ stars7: null }, { stars7: 0 }, { stars7: -1 }, { stars: null }, { stars: 0 }]) {
+    assert.equal(trend({ ...row, ...extra }, 'stars', asOf), null)
+  }
+  const tiny = { ...row, name: 'tiny', stars: 1 }
+  const gaining = { ...row, name: 'gaining', stars: 100, stars7: 30 }
+  const large = { ...row, name: 'large', stars: 10000, stars7: 100 }
+  assert.deepEqual(rank([tiny, large, gaining], 'trending', 'stars', asOf), [gaining, large, tiny])
 })
 
 test('counts require every post-release day, with zeros permitted before release', () => {

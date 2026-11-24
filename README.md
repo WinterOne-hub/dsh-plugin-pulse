@@ -9,7 +9,7 @@ Plugin directory, leaderboards, and feature requests for DeepSeek Harness (DSH).
 | 功能 / Feature | 中文 | English |
 | --- | --- | --- |
 | 最受欢迎 / Popular | 按近 30 天 npm 下载量或 GitHub Stars 排行。 | Rank by 30-day npm downloads or GitHub stars. |
-| 新插件飙升 / Trending | 比较新插件最近两周的增长。 | See which new plugins gained the most week over week. |
+| 插件趋势 / Trending | 按近期下载增长或新增 Stars 排行。 | Rank plugins by download growth or new GitHub stars. |
 | 最期待功能 / Requests | 搜不到合适插件时可提交需求，查看热门提议。 | Request a missing feature and see what others want. |
 
 ## 本地预览
@@ -34,7 +34,7 @@ npm pack
 在启动过一次的 Harness Desktop 中，先完全退出应用，再在同一目录运行：
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.4.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.5.tgz"
 ```
 
 重启后，在左侧栏打开「插件风向标」。「复制 GitHub 地址」会复制仓库链接。「去安装」会复制可粘贴的安装地址并打开 Harness 的「插件」页。仓库根目录的插件包与榜单版本匹配时使用 GitHub 地址，其他条目使用 `包名@版本`。点「添加插件」，粘贴后按提示确认。Web 版安装时把 `desktop` 换成 `web`。使用旧版 `0.1.0` 时，入口位于「设置 → 插件风向标」，安装命令中的文件名也应与下载版本一致。
@@ -48,7 +48,7 @@ dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.4.tgz"
 ## 排名口径
 
 - **最受欢迎**：对有数据的插件按 npm 最近 30 个完整统计日下载量排序，或按 GitHub 仓库 Stars 排序。共享主项目的 Stars 单列。下载量可能包括自动化拉取；Stars 反映仓库关注度。
-- **新插件飙升**：覆盖过去 60 天首发的 npm 插件，比较两个完整的 7 天窗口。发布未满 14 天的插件单列为「刚发布」。趋势分使用 `ln(1 + 增量) × ln(1 + 增量 ÷ (前周基数 + 平滑值))`。下载量用 100 平滑，最近一周至少 50 次且净增至少 10。Stars 比较两周各自的净增，用 5 平滑，最近一周至少净增 3 颗且比前周多增至少 1 颗。
+- **插件趋势**：覆盖所有已发布满 14 天的插件，发布未满 14 天的条目单列为「刚发布」。下载量比较两个完整的 7 天窗口，最近一周至少 20 次下载且比前周增加至少 1 次，趋势分为 `ln(1 + 增量) × ln(1 + 增量 ÷ (前周下载量 + 100))`。Stars 使用最近 7 天净增，至少新增 1 颗，趋势分为 `ln(1 + 新增 Stars) × ln(1 + 新增 Stars ÷ (周初 Stars + 20))`。两种指标各自排名。
 - **最期待功能**：按最近 30 天的需求提交数排序。找不到合适的主题时，可通过 GitHub 表单提议新主题（需部署方开启）。
 
 目录根据维护清单抓取 npm 注册表，并核验最新版本声明了有效的 `dsh.bundle`，没有运行这些第三方插件。兼容范围来自发布包声明；缺失时不推定兼容。GitHub 采集按 UTC 保存 Stars 计数；npm 默认延后两天取窗口终点，给数据更新留余量。GitHub 和 npm 数据是独立信号，不用一个综合分混排。功能简介由项目编写。见[榜单数据来源](data/README.md)。
@@ -93,7 +93,7 @@ Use Node.js 24. Run `npm run build && npm run preview`, then open the [local pre
 Download the `.tgz` from [GitHub Releases](https://github.com/WinterOne-hub/dsh-plugin-pulse/releases), or run `npm pack` in the repository. Quit Harness Desktop, open a terminal in the directory containing the package, and run the following command.
 
 ```sh
-dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.4.tgz"
+dsh plugin --profile desktop add "$PWD/dsh-plugin-pulse-0.1.5.tgz"
 ```
 
 Restart Harness and open **插件风向标** in the left sidebar. **复制 GitHub 地址** copies the repository URL. **去安装** copies a target and opens Harness’s **Plugins** page. It uses the GitHub URL when the root package matches the listed version and `package@version` for other entries. Choose **Add plugin**, paste, and follow the prompts. Use `--profile web` for Harness Web. For `0.1.0`, look under **Settings → 插件风向标** and use the downloaded filename in the install command.
@@ -105,7 +105,7 @@ The header shows your installed version. Plugin Pulse checks for updates when Ha
 ### Ranking rules
 
 - **Popular.** Rank by npm downloads over 30 complete days or GitHub stars. Shared repository stars appear separately. Download counts can include automated activity.
-- **Trending.** Include DSH bundles first published on npm within 60 days. Compare two complete weeks using `ln(1 + gain) × ln(1 + gain / (previous week + smoothing))`, with negative baselines treated as zero. Downloads use a smoothing value of 100, a minimum of 50 downloads in the latest week, and a gain of at least 10. Weekly star gains use a smoothing value of 5, a minimum of 3 net new stars this week, and an increase of at least 1 over the previous week. Plugins released less than 14 days ago appear under New Releases.
+- **Trending.** Include plugins published at least 14 days ago, with newer plugins listed under New Releases. Downloads compare two complete weeks, requiring at least 20 downloads this week and a gain of at least 1. The score is `ln(1 + gain) × ln(1 + gain / (previous week downloads + 100))`. GitHub requires at least 1 net new star over the last 7 days and uses `ln(1 + new stars) × ln(1 + new stars / (stars at the start of the week + 20))`. Each metric has its own ranking.
 - **Requests.** Rank by submissions over the past 30 days. Where enabled, users can propose new topics through a GitHub issue form.
 
 The collector checks the latest package for a `dsh.bundle` declaration and reads compatibility from package metadata. It records GitHub stars by UTC date and allows two days for npm download figures to settle. Plugin summaries are written for this project. [Data sources](data/README.md)

@@ -81,16 +81,21 @@ export function makeCore() {
   const sortBy = (rows, key) => rows.filter(row => Number.isFinite(row[key]))
     .sort((a, b) => b[key] - a[key] || a.name.localeCompare(b.name, 'en'))
   function trend(row, metric, asOf) {
-    if (!asOf || !row.firstRelease || row.firstRelease < day(asOf, -59) ||
-        row.firstRelease > day(asOf, -14)) return null
+    if (!asOf || !row.firstRelease || row.firstRelease > day(asOf, -14)) return null
     const stars = metric === 'stars'
     const recent = stars ? row.stars7 : row.downloads7
-    const previous = stars ? row.starsPrevious7 : row.previousDownloads7
-    if (!Number.isSafeInteger(recent) || !Number.isSafeInteger(previous)) return null
+    if (!Number.isSafeInteger(recent)) return null
+    if (stars) {
+      if (recent < 1 || !Number.isSafeInteger(row.stars) || row.stars < recent) return null
+      const baseline = row.stars - recent
+      const score = Math.log1p(recent) * Math.log1p(recent / (baseline + 20))
+      return { recent, previous: baseline, delta: recent, score }
+    }
+    const previous = row.previousDownloads7
+    if (!Number.isSafeInteger(previous) || previous < 0) return null
     const delta = recent - previous
-    if (stars ? recent < 3 || delta < 1 : recent < 50 || previous < 0 || delta < 10) return null
-    const smoothing = stars ? 5 : 100
-    const score = Math.log1p(delta) * Math.log1p(delta / (Math.max(0, previous) + smoothing))
+    if (recent < 20 || delta < 1) return null
+    const score = Math.log1p(delta) * Math.log1p(delta / (previous + 100))
     return { recent, previous, delta, score }
   }
 
