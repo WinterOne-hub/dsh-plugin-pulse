@@ -25,9 +25,10 @@ export function mountPulse(root, {
   host.append(style, app)
   app.innerHTML = `
     <header class="console">
-      <div class="console-bar"><span class="brand"><span class="console-icon" aria-hidden="true">&gt;_</span> dsh / plugin-pulse</span><div class="console-meta">${packageVersion ? `<span class="plugin-version" title="当前版本 / Installed version">v${escape(packageVersion)}</span>` : ''}<span class="catalog-size"></span></div></div>
+      <div class="console-bar"><span class="brand"><span class="console-icon" aria-hidden="true">&gt;_</span> dsh / plugin-pulse</span><div class="console-meta">${packageVersion ? `<span class="plugin-version" title="当前版本 / Installed version">v${escape(packageVersion)}</span>` : ''}${updates ? '<button type="button" class="check-update">检查更新</button>' : ''}</div></div>
       <div class="console-body">
-        <h1>插件风向标</h1>
+        <div class="console-title"><h1>插件风向标</h1><span class="catalog-size"></span></div>
+        <p class="check-status" role="status"></p>
         <div class="search">
           <div class="command"><span aria-hidden="true" class="prompt">$</span><label class="sr-only" for="pulse-search">搜插件</label><input id="pulse-search" type="search" maxlength="120" spellcheck="false" placeholder="搜索插件名或功能"><button class="search-key" type="button" data-action="search" aria-label="聚焦插件搜索" aria-keyshortcuts="/" title="在此面板按 / 聚焦搜索"><kbd>/</kbd></button></div>
           <button class="primary" type="button" data-action="report"><span aria-hidden="true">+</span> 提需求</button>
@@ -51,6 +52,24 @@ export function mountPulse(root, {
   const results = app.querySelector('#pulse-results')
   const report = app.querySelector('#pulse-report')
   const status = app.querySelector('.status')
+  const checkButton = app.querySelector('.check-update')
+  const checkStatus = app.querySelector('.check-status')
+  let checking = false
+  let installPhase
+  const syncCheckButton = () => {
+    if (checkButton) checkButton.disabled = checking || installPhase === 'installing' || installPhase === 'restart'
+  }
+  checkButton?.addEventListener('click', async () => {
+    checking = true
+    syncCheckButton()
+    checkStatus.textContent = '正在检查更新…'
+    const result = await updates.check()
+    if (disposed) return
+    checking = false
+    syncCheckButton()
+    checkStatus.textContent = result === 'current' ? '已是最新版本。'
+      : result === 'error' ? '检查失败，请稍后重试。' : ''
+  })
   const notify = message => { if (!disposed) status.textContent = message }
   const validName = /^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/
   function installActions(row) {
@@ -266,6 +285,8 @@ export function mountPulse(root, {
   hydrateCategories()
   render()
   const unsubscribeUpdates = updates?.subscribe(update => {
+    installPhase = update?.phase
+    syncCheckButton()
     const banner = app.querySelector('.update-banner')
     banner.hidden = !update
     if (update) {

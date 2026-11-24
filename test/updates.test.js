@@ -61,3 +61,35 @@ test('a failed update can be retried and an already installed version only needs
   assert.equal(state().phase, 'restart')
   assert.equal(count, 1)
 })
+
+test('manual checks bypass the cached release and can retry a network failure', async t => {
+  const name = 'dsh-plugin-pulse'
+  const checker = createUpdateChecker({
+    core: makeCore(), releaseRepo: 'owner/pulse', packageName: name, packageVersion: '0.1.5'
+  })
+  const window = new EventTarget()
+  window.setInterval = setInterval
+  window.clearInterval = clearInterval
+  window.localStorage = {
+    getItem: () => JSON.stringify({ expires: Date.now() + 60000, version: null }),
+    setItem() {}
+  }
+  let requests = 0
+  window.fetch = async (_url, options) => {
+    assert.equal(options.cache, 'no-store')
+    requests++
+    return {
+      ok: requests !== 1,
+      json: async () => requests === 2 ? [] : [{
+        tag_name: 'v0.1.6', draft: false,
+        assets: [{ name: name + '-0.1.6.tgz', state: 'uploaded' }]
+      }]
+    }
+  }
+  t.after(checker.start(window))
+  assert.equal(requests, 0)
+  assert.deepEqual(await Promise.all([checker.check(), checker.check()]), ['error', 'error'])
+  assert.equal(requests, 1)
+  assert.equal(await checker.check(), 'current')
+  assert.equal(await checker.check(), 'available')
+})

@@ -5,6 +5,7 @@ export function createUpdateChecker({ core, releaseRepo, packageName, packageVer
   const listeners = new Set()
   let update = null
   let getManager
+  let checkNow
 
   function publish(value) {
     update = value
@@ -19,6 +20,9 @@ export function createUpdateChecker({ core, releaseRepo, packageName, packageVer
   }
 
   return {
+    check() {
+      return checkNow?.() ?? Promise.resolve('error')
+    },
     usePluginManager(resolveManager) {
       getManager = resolveManager
     },
@@ -67,7 +71,7 @@ export function createUpdateChecker({ core, releaseRepo, packageName, packageVer
       if (!repoUrl || !packageName || !packageVersion) return () => {}
       const controller = new AbortController()
       let nextCheck = 0
-      let pending = false
+      let pending
       try {
         const cached = JSON.parse(window.localStorage.getItem(cacheKey))
         const now = Date.now()
@@ -77,32 +81,40 @@ export function createUpdateChecker({ core, releaseRepo, packageName, packageVer
         }
       } catch { /* storage is optional */ }
 
-      async function refresh() {
-        if (controller.signal.aborted || pending || Date.now() < nextCheck) return
-        pending = true
+      async function fetchRelease(manual) {
         nextCheck = Date.now() + 15 * 60 * 1000
         try {
           const response = await window.fetch('https://api.github.com/repos/' + releaseRepo + '/releases?per_page=20', {
-            cache: 'no-cache',
+            cache: manual ? 'no-store' : 'no-cache',
             credentials: 'omit',
             signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])
           })
-          if (!response.ok) return
+          if (!response.ok) return 'error'
           const releases = await response.json()
-          if (!Array.isArray(releases) || controller.signal.aborted) return
+          if (!Array.isArray(releases) || controller.signal.aborted) return 'error'
           const version = core.findUpdate(releases, packageVersion, packageName)
           nextCheck = Date.now() + hour
           try { window.localStorage.setItem(cacheKey, JSON.stringify({ version, expires: nextCheck })) }
           catch { /* the in-memory result remains available */ }
           applyVersion(version)
-        } catch { /* retry later and retain any known update */ }
-        finally { pending = false }
+          return version ? 'available' : 'current'
+        } catch { return 'error' }
+      }
+      function refresh(manual) {
+        if (pending) return pending
+        if (controller.signal.aborted || (!manual && Date.now() < nextCheck)) return
+        pending = fetchRelease(manual).finally(() => { pending = undefined })
+        return pending
       }
 
-      void refresh()
-      window.addEventListener('focus', refresh, { signal: controller.signal })
-      const timer = window.setInterval(refresh, 15 * 60 * 1000)
+      const scheduled = () => { void refresh(false) }
+      const check = () => refresh(true)
+      checkNow = check
+      scheduled()
+      window.addEventListener('focus', scheduled, { signal: controller.signal })
+      const timer = window.setInterval(scheduled, 15 * 60 * 1000)
       return () => {
+        if (checkNow === check) checkNow = undefined
         controller.abort()
         window.clearInterval(timer)
       }
