@@ -81,18 +81,36 @@ export function createUpdateChecker({ core, releaseRepo, packageName, packageVer
         }
       } catch { /* storage is optional */ }
 
+      async function readMetadata(url, manual) {
+        const response = await window.fetch(url, {
+          cache: manual ? 'no-store' : 'no-cache',
+          credentials: 'omit',
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])
+        })
+        if (!response.ok) throw new Error('Release metadata unavailable')
+        return response.json()
+      }
+
+      async function findVersion(manual) {
+        try {
+          const releases = await readMetadata('https://api.github.com/repos/' + releaseRepo + '/releases?per_page=20', manual)
+          if (!Array.isArray(releases)) throw new Error('Invalid release metadata')
+          return core.findUpdate(releases, packageVersion, packageName)
+        } catch {
+          if (controller.signal.aborted) throw controller.signal.reason
+          const index = await readMetadata('https://raw.githubusercontent.com/' + releaseRepo + '/main/data/release.json', manual)
+          if (index?.packageName !== packageName || !core.isNewerVersion(index.version, '0.0.0')) {
+            throw new Error('Invalid release index')
+          }
+          return core.isNewerVersion(index.version, packageVersion) ? index.version : null
+        }
+      }
+
       async function fetchRelease(manual) {
         nextCheck = Date.now() + 15 * 60 * 1000
         try {
-          const response = await window.fetch('https://api.github.com/repos/' + releaseRepo + '/releases?per_page=20', {
-            cache: manual ? 'no-store' : 'no-cache',
-            credentials: 'omit',
-            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)])
-          })
-          if (!response.ok) return 'error'
-          const releases = await response.json()
-          if (!Array.isArray(releases) || controller.signal.aborted) return 'error'
-          const version = core.findUpdate(releases, packageVersion, packageName)
+          const version = await findVersion(manual)
+          if (controller.signal.aborted) return 'error'
           nextCheck = Date.now() + hour
           try { window.localStorage.setItem(cacheKey, JSON.stringify({ version, expires: nextCheck })) }
           catch { /* the in-memory result remains available */ }

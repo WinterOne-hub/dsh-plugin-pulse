@@ -75,8 +75,9 @@ test('manual checks bypass the cached release and can retry a network failure', 
     setItem() {}
   }
   let requests = 0
-  window.fetch = async (_url, options) => {
+  window.fetch = async (url, options) => {
     assert.equal(options.cache, 'no-store')
+    if (url.includes('raw.githubusercontent.com')) return { ok: false }
     requests++
     return {
       ok: requests !== 1,
@@ -92,4 +93,21 @@ test('manual checks bypass the cached release and can retry a network failure', 
   assert.equal(requests, 1)
   assert.equal(await checker.check(), 'current')
   assert.equal(await checker.check(), 'available')
+})
+
+test('the published index can confirm the current version when the Releases API fails', async t => {
+  const checker = createUpdateChecker({
+    core: makeCore(), releaseRepo: 'owner/pulse', packageName: 'dsh-plugin-pulse', packageVersion: '0.1.6'
+  })
+  const window = new EventTarget()
+  window.setInterval = setInterval
+  window.clearInterval = clearInterval
+  window.localStorage = { getItem: () => null, setItem() {} }
+  window.fetch = async url => {
+    if (url.includes('api.github.com')) throw new Error('Network error')
+    assert.equal(url, 'https://raw.githubusercontent.com/owner/pulse/main/data/release.json')
+    return { ok: true, json: async () => ({ packageName: 'dsh-plugin-pulse', version: '0.1.6' }) }
+  }
+  t.after(checker.start(window))
+  assert.equal(await checker.check(), 'current')
 })
